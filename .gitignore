@@ -1,0 +1,47 @@
+# Python缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 构建目录
+build/
+dist/
+*.egg-info/
+
+# 数据库文件
+*.db
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.temp
+
+# IDE文件
+.vscode/
+.idea/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 发布包
+义脉树枝图生成器_发布包/
+义脉树枝图生成器_发布版/
+*.zip
+*.exe
+
+# Vercel部署文件
+.vercel/
+
+# 备份文件
+源码备份/
+
+# PyInstaller规格文件
+*.spec
+
+# 其他临时文件
+*.bak
+*.swp
+*.swo

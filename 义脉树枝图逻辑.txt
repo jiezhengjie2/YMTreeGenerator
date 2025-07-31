@@ -1,0 +1,321 @@
+<style type="text/css">:where(html[dir="ltr"]),:where([data-sonner-toaster][dir="ltr"]){--toast-icon-margin-start: -3px;--toast-icon-margin-end: 4px;--toast-svg-margin-start: -1px;--toast-svg-margin-end: 0px;--toast-button-margin-start: auto;--toast-button-margin-end: 0;--toast-close-button-start: 0;--toast-close-button-end: unset;--toast-close-button-transform: translate(-35%, -35%)}:where(html[dir="rtl"]),:where([data-sonner-toaster][dir="rtl"]){--toast-icon-margin-start: 4px;--toast-icon-margin-end: -3px;--toast-svg-margin-start: 0px;--toast-svg-margin-end: -1px;--toast-button-margin-start: 0;--toast-button-margin-end: auto;--toast-close-button-start: unset;--toast-close-button-end: 0;--toast-close-button-transform: translate(35%, -35%)}:where([data-sonner-toaster]){position:fixed;width:var(--width);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;--gray1: hsl(0, 0%, 99%);--gray2: hsl(0, 0%, 97.3%);--gray3: hsl(0, 0%, 95.1%);--gray4: hsl(0, 0%, 93%);--gray5: hsl(0, 0%, 90.9%);--gray6: hsl(0, 0%, 88.7%);--gray7: hsl(0, 0%, 85.8%);--gray8: hsl(0, 0%, 78%);--gray9: hsl(0, 0%, 56.1%);--gray10: hsl(0, 0%, 52.3%);--gray11: hsl(0, 0%, 43.5%);--gray12: hsl(0, 0%, 9%);--border-radius: 8px;box-sizing:border-box;padding:0;margin:0;list-style:none;outline:none;z-index:999999999}:where([data-sonner-toaster][data-x-position="right"]){right:max(var(--offset),env(safe-area-inset-right))}:where([data-sonner-toaster][data-x-position="left"]){left:max(var(--offset),env(safe-area-inset-left))}:where([data-sonner-toaster][data-x-position="center"]){left:50%;transform:translate(-50%)}:where([data-sonner-toaster][data-y-position="top"]){top:max(var(--offset),env(safe-area-inset-top))}:where([data-sonner-toaster][data-y-position="bottom"]){bottom:max(var(--offset),env(safe-area-inset-bottom))}:where([data-sonner-toast]){--y: translateY(100%);--lift-amount: calc(var(--lift) * var(--gap));z-index:var(--z-index);position:absolute;opacity:0;transform:var(--y);filter:blur(0);touch-action:none;transition:transform .4s,opacity .4s,height .4s,box-shadow .2s;box-sizing:border-box;outline:none;overflow-wrap:anywhere}:where([data-sonner-toast][data-styled="true"]){padding:16px;background:var(--normal-bg);border:1px solid var(--normal-border);color:var(--normal-text);border-radius:var(--border-radius);box-shadow:0 4px 12px #0000001a;width:var(--width);font-size:13px;display:flex;align-items:center;gap:6px}:where([data-sonner-toast]:focus-visible){box-shadow:0 4px 12px #0000001a,0 0 0 2px #0003}:where([data-sonner-toast][data-y-position="top"]){top:0;--y: translateY(-100%);--lift: 1;--lift-amount: calc(1 * var(--gap))}:where([data-sonner-toast][data-y-position="bottom"]){bottom:0;--y: translateY(100%);--lift: -1;--lift-amount: calc(var(--lift) * var(--gap))}:where([data-sonner-toast]) :where([data-description]){font-weight:400;line-height:1.4;color:inherit}:where([data-sonner-toast]) :where([data-title]){font-weight:500;line-height:1.5;color:inherit}:where([data-sonner-toast]) :where([data-icon]){display:flex;height:16px;width:16px;position:relative;justify-content:flex-start;align-items:center;flex-shrink:0;margin-left:var(--toast-icon-margin-start);margin-right:var(--toast-icon-margin-end)}:where([data-sonner-toast][data-promise="true"]) :where([data-icon])>svg{opacity:0;transform:scale(.8);transform-origin:center;animation:sonner-fade-in .3s ease forwards}:where([data-sonner-toast]) :where([data-icon])>*{flex-shrink:0}:where([data-sonner-toast]) :where([data-icon]) svg{margin-left:var(--toast-svg-margin-start);margin-right:var(--toast-svg-margin-end)}:where([data-sonner-toast]) :where([data-content]){display:flex;flex-direction:column;gap:2px}[data-sonner-toast][data-styled=true] [data-button]{border-radius:4px;padding-left:8px;padding-right:8px;height:24px;font-size:12px;color:var(--normal-bg);background:var(--normal-text);margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end);border:none;cursor:pointer;outline:none;display:flex;align-items:center;flex-shrink:0;transition:opacity .4s,box-shadow .2s}:where([data-sonner-toast]) :where([data-button]):focus-visible{box-shadow:0 0 0 2px #0006}:where([data-sonner-toast]) :where([data-button]):first-of-type{margin-left:var(--toast-button-margin-start);margin-right:var(--toast-button-margin-end)}:where([data-sonner-toast]) :where([data-cancel]){color:var(--normal-text);background:rgba(0,0,0,.08)}:where([data-sonner-toast][data-theme="dark"]) :where([data-cancel]){background:rgba(255,255,255,.3)}:where([data-sonner-toast]) :where([data-close-button]){position:absolute;left:var(--toast-close-button-start);right:var(--toast-close-button-end);top:0;height:20px;width:20px;display:flex;justify-content:center;align-items:center;padding:0;background:var(--gray1);color:var(--gray12);border:1px solid var(--gray4);transform:var(--toast-close-button-transform);border-radius:50%;cursor:pointer;z-index:1;transition:opacity .1s,background .2s,border-color .2s}:where([data-sonner-toast]) :where([data-close-button]):focus-visible{box-shadow:0 4px 12px #0000001a,0 0 0 2px #0003}:where([data-sonner-toast]) :where([data-disabled="true"]){cursor:not-allowed}:where([data-sonner-toast]):hover :where([data-close-button]):hover{background:var(--gray2);border-color:var(--gray5)}:where([data-sonner-toast][data-swiping="true"]):before{content:"";position:absolute;left:0;right:0;height:100%;z-index:-1}:where([data-sonner-toast][data-y-position="top"][data-swiping="true"]):before{bottom:50%;transform:scaleY(3) translateY(50%)}:where([data-sonner-toast][data-y-position="bottom"][data-swiping="true"]):before{top:50%;transform:scaleY(3) translateY(-50%)}:where([data-sonner-toast][data-swiping="false"][data-removed="true"]):before{content:"";position:absolute;inset:0;transform:scaleY(2)}:where([data-sonner-toast]):after{content:"";position:absolute;left:0;height:calc(var(--gap) + 1px);bottom:100%;width:100%}:where([data-sonner-toast][data-mounted="true"]){--y: translateY(0);opacity:1}:where([data-sonner-toast][data-expanded="false"][data-front="false"]){--scale: var(--toasts-before) * .05 + 1;--y: translateY(calc(var(--lift-amount) * var(--toasts-before))) scale(calc(-1 * var(--scale)));height:var(--front-toast-height)}:where([data-sonner-toast])>*{transition:opacity .4s}:where([data-sonner-toast][data-expanded="false"][data-front="false"][data-styled="true"])>*{opacity:0}:where([data-sonner-toast][data-visible="false"]){opacity:0;pointer-events:none}:where([data-sonner-toast][data-mounted="true"][data-expanded="true"]){--y: translateY(calc(var(--lift) * var(--offset)));height:var(--initial-height)}:where([data-sonner-toast][data-removed="true"][data-front="true"][data-swipe-out="false"]){--y: translateY(calc(var(--lift) * -100%));opacity:0}:where([data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="true"]){--y: translateY(calc(var(--lift) * var(--offset) + var(--lift) * -100%));opacity:0}:where([data-sonner-toast][data-removed="true"][data-front="false"][data-swipe-out="false"][data-expanded="false"]){--y: translateY(40%);opacity:0;transition:transform .5s,opacity .2s}:where([data-sonner-toast][data-removed="true"][data-front="false"]):before{height:calc(var(--initial-height) + 20%)}[data-sonner-toast][data-swiping=true]{transform:var(--y) translateY(var(--swipe-amount, 0px));transition:none}[data-sonner-toast][data-swipe-out=true][data-y-position=bottom],[data-sonner-toast][data-swipe-out=true][data-y-position=top]{animation:swipe-out .2s ease-out forwards}@keyframes swipe-out{0%{transform:translateY(calc(var(--lift) * var(--offset) + var(--swipe-amount)));opacity:1}to{transform:translateY(calc(var(--lift) * var(--offset) + var(--swipe-amount) + var(--lift) * -100%));opacity:0}}@media (max-width: 600px){[data-sonner-toaster]{position:fixed;--mobile-offset: 16px;right:var(--mobile-offset);left:var(--mobile-offset);width:100%}[data-sonner-toaster] [data-sonner-toast]{left:0;right:0;width:calc(100% - var(--mobile-offset) * 2)}[data-sonner-toaster][data-x-position=left]{left:var(--mobile-offset)}[data-sonner-toaster][data-y-position=bottom]{bottom:20px}[data-sonner-toaster][data-y-position=top]{top:20px}[data-sonner-toaster][data-x-position=center]{left:var(--mobile-offset);right:var(--mobile-offset);transform:none}}[data-sonner-toaster][data-theme=light]{--normal-bg: #fff;--normal-border: var(--gray4);--normal-text: var(--gray12);--success-bg: hsl(143, 85%, 96%);--success-border: hsl(145, 92%, 91%);--success-text: hsl(140, 100%, 27%);--info-bg: hsl(208, 100%, 97%);--info-border: hsl(221, 91%, 91%);--info-text: hsl(210, 92%, 45%);--warning-bg: hsl(49, 100%, 97%);--warning-border: hsl(49, 91%, 91%);--warning-text: hsl(31, 92%, 45%);--error-bg: hsl(359, 100%, 97%);--error-border: hsl(359, 100%, 94%);--error-text: hsl(360, 100%, 45%)}[data-sonner-toaster][data-theme=light] [data-sonner-toast][data-invert=true]{--normal-bg: #000;--normal-border: hsl(0, 0%, 20%);--normal-text: var(--gray1)}[data-sonner-toaster][data-theme=dark] [data-sonner-toast][data-invert=true]{--normal-bg: #fff;--normal-border: var(--gray3);--normal-text: var(--gray12)}[data-sonner-toaster][data-theme=dark]{--normal-bg: #000;--normal-border: hsl(0, 0%, 20%);--normal-text: var(--gray1);--success-bg: hsl(150, 100%, 6%);--success-border: hsl(147, 100%, 12%);--success-text: hsl(150, 86%, 65%);--info-bg: hsl(215, 100%, 6%);--info-border: hsl(223, 100%, 12%);--info-text: hsl(216, 87%, 65%);--warning-bg: hsl(64, 100%, 6%);--warning-border: hsl(60, 100%, 12%);--warning-text: hsl(46, 87%, 65%);--error-bg: hsl(358, 76%, 10%);--error-border: hsl(357, 89%, 16%);--error-text: hsl(358, 100%, 81%)}[data-rich-colors=true][data-sonner-toast][data-type=success],[data-rich-colors=true][data-sonner-toast][data-type=success] [data-close-button]{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}[data-rich-colors=true][data-sonner-toast][data-type=info],[data-rich-colors=true][data-sonner-toast][data-type=info] [data-close-button]{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}[data-rich-colors=true][data-sonner-toast][data-type=warning],[data-rich-colors=true][data-sonner-toast][data-type=warning] [data-close-button]{background:var(--warning-bg);border-color:var(--warning-border);color:var(--warning-text)}[data-rich-colors=true][data-sonner-toast][data-type=error],[data-rich-colors=true][data-sonner-toast][data-type=error] [data-close-button]{background:var(--error-bg);border-color:var(--error-border);color:var(--error-text)}.sonner-loading-wrapper{--size: 16px;height:var(--size);width:var(--size);position:absolute;inset:0;z-index:10}.sonner-loading-wrapper[data-visible=false]{transform-origin:center;animation:sonner-fade-out .2s ease forwards}.sonner-spinner{position:relative;top:50%;left:50%;height:var(--size);width:var(--size)}.sonner-loading-bar{animation:sonner-spin 1.2s linear infinite;background:var(--gray11);border-radius:6px;height:8%;left:-10%;position:absolute;top:-3.9%;width:24%}.sonner-loading-bar:nth-child(1){animation-delay:-1.2s;transform:rotate(.0001deg) translate(146%)}.sonner-loading-bar:nth-child(2){animation-delay:-1.1s;transform:rotate(30deg) translate(146%)}.sonner-loading-bar:nth-child(3){animation-delay:-1s;transform:rotate(60deg) translate(146%)}.sonner-loading-bar:nth-child(4){animation-delay:-.9s;transform:rotate(90deg) translate(146%)}.sonner-loading-bar:nth-child(5){animation-delay:-.8s;transform:rotate(120deg) translate(146%)}.sonner-loading-bar:nth-child(6){animation-delay:-.7s;transform:rotate(150deg) translate(146%)}.sonner-loading-bar:nth-child(7){animation-delay:-.6s;transform:rotate(180deg) translate(146%)}.sonner-loading-bar:nth-child(8){animation-delay:-.5s;transform:rotate(210deg) translate(146%)}.sonner-loading-bar:nth-child(9){animation-delay:-.4s;transform:rotate(240deg) translate(146%)}.sonner-loading-bar:nth-child(10){animation-delay:-.3s;transform:rotate(270deg) translate(146%)}.sonner-loading-bar:nth-child(11){animation-delay:-.2s;transform:rotate(300deg) translate(146%)}.sonner-loading-bar:nth-child(12){animation-delay:-.1s;transform:rotate(330deg) translate(146%)}@keyframes sonner-fade-in{0%{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}@keyframes sonner-fade-out{0%{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.8)}}@keyframes sonner-spin{0%{opacity:1}to{opacity:.15}}@media (prefers-reduced-motion){[data-sonner-toast],[data-sonner-toast]>*,.sonner-loading-bar{transition:none!important;animation:none!important}}.sonner-loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transform-origin:center;transition:opacity .2s,transform .2s}.sonner-loader[data-visible=false]{opacity:0;transform:scale(.8) translate(-50%,-50%)}
+</style><style class="mpa-style-fix ImageGatherer">.FotorFrame{position:fixed!important}
+</style><style class="mpa-style-fix SideFunctionPanel">.weui-desktop-online-faq__wrp{top:304px!important;bottom:unset!important}.weui-desktop-online-faq__wrp .weui-desktop-online-faq__switch{width:38px!important}
+</style></head>
+
+<body mpa-version="11.5.1" mpa-extension-id="aidjohbjielfdhcaookdaolppglahebo" data-new-gr-c-s-check-loaded="14.1113.0" data-gr-ext-installed="">
+    <h1>义脉树枝图生成器</h1>
+    <div class="main-div">
+        <div class="container">
+            <div class="numbers" style="font-family: monospace; font-size: 16px; font-weight: 400; letter-spacing: normal; line-height: normal; padding: 25px; height: 500px;"><div>1</div></div>
+            <textarea id="inputArea" class="textarea" placeholder="输入格式说明：
+1. 第一行表示主题名称，行首无短线。
+2. 目录每增加一级，行首短线多一条，短线须为半角。
+3. 允许有空行，自动忽略空行。
+4. 若无法对齐，请调整字母、数字或标点为全角。
+5. 若无法对齐，请调整字体为宋体。
+
+下面为输入示例：
+
+念住
+-念住初阶
+--第一轮：念处及其如实知
+---身念处
+---受念处
+---法念处
+---心念处
+---义念处
+--第二轮：念住
+--第三轮：念住的道学
+-念住中阶
+--念身七目
+--禅观五步
+-念住高阶"></textarea>
+        <sider-quick-compose-btn dir="ltr" data-gpts-theme="light" data-ext-text-inserter="no" style="display: contents;"><template shadowrootmode="closed"><style data-rc-order="prependQueue" data-rc-priority="-999" data-css-hash="16be0w6" data-token-hash="1c2ogvj">:where(.css-18jo2e4) a{color:#7450ff;text-decoration:none;background-color:transparent;outline:none;cursor:pointer;transition:color 0.3s;-webkit-text-decoration-skip:objects;}:where(.css-18jo2e4) a:hover{color:#baa1ff;}:where(.css-18jo2e4) a:active{color:#5338d9;}:where(.css-18jo2e4) a:active,:where(.css-18jo2e4) a:hover{text-decoration:none;outline:0;}:where(.css-18jo2e4) a:focus{text-decoration:none;outline:0;}:where(.css-18jo2e4) a[disabled]{color:rgba(0, 0, 0, 0.25);cursor:not-allowed;}</style><style data-rc-order="prependQueue" data-rc-priority="-999" data-css-hash="16gqa8n" data-token-hash="1c2ogvj">:where(.css-18jo2e4).ant-tooltip{box-sizing:border-box;margin:0;padding:0;color:rgba(0, 0, 0, 0.88);font-size:14px;line-height:1.5714285714285714;list-style:none;font-family:var(--gpts-font-family);position:absolute;z-index:1070;display:block;width:max-content;max-width:250px;visibility:visible;transform-origin:var(--arrow-x, 50%) var(--arrow-y, 50%);--antd-arrow-background-color:var(--sds-color-grey-layer3-reserve);}:where(.css-18jo2e4).ant-tooltip-hidden{display:none;}:where(.css-18jo2e4).ant-tooltip .ant-tooltip-inner{min-width:32px;min-height:32px;padding:6px 8px;color:#fff;text-align:start;text-decoration:none;word-wrap:break-word;background-color:var(--sds-color-grey-layer3-reserve);border-radius:8px;box-shadow:0 6px 16px 0 rgba(0, 0, 0, 0.08),0 3px 6px -4px rgba(0, 0, 0, 0.12),0 9px 28px 8px rgba(0, 0, 0, 0.05);box-sizing:border-box;}:where(.css-18jo2e4).ant-tooltip-placement-left .ant-tooltip-inner,:where(.css-18jo2e4).ant-tooltip-placement-leftTop .ant-tooltip-inner,:where(.css-18jo2e4).ant-tooltip-placement-leftBottom .ant-tooltip-inner,:where(.css-18jo2e4).ant-tooltip-placement-right .ant-tooltip-inner,:where(.css-18jo2e4).ant-tooltip-placement-rightTop .ant-tooltip-inner,:where(.css-18jo2e4).ant-tooltip-placement-rightBottom .ant-tooltip-inner{border-radius:8px;}:where(.css-18jo2e4).ant-tooltip .ant-tooltip-content{position:relative;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-blue .ant-tooltip-inner{background-color:#1677ff;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-blue .ant-tooltip-arrow{--antd-arrow-background-color:#1677ff;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-purple .ant-tooltip-inner{background-color:#722ed1;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-purple .ant-tooltip-arrow{--antd-arrow-background-color:#722ed1;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-cyan .ant-tooltip-inner{background-color:#13c2c2;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-cyan .ant-tooltip-arrow{--antd-arrow-background-color:#13c2c2;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-green .ant-tooltip-inner{background-color:#52c41a;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-green .ant-tooltip-arrow{--antd-arrow-background-color:#52c41a;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-magenta .ant-tooltip-inner{background-color:#eb2f96;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-magenta .ant-tooltip-arrow{--antd-arrow-background-color:#eb2f96;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-pink .ant-tooltip-inner{background-color:#eb2f96;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-pink .ant-tooltip-arrow{--antd-arrow-background-color:#eb2f96;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-red .ant-tooltip-inner{background-color:#f5222d;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-red .ant-tooltip-arrow{--antd-arrow-background-color:#f5222d;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-orange .ant-tooltip-inner{background-color:#fa8c16;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-orange .ant-tooltip-arrow{--antd-arrow-background-color:#fa8c16;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-yellow .ant-tooltip-inner{background-color:#fadb14;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-yellow .ant-tooltip-arrow{--antd-arrow-background-color:#fadb14;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-volcano .ant-tooltip-inner{background-color:#fa541c;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-volcano .ant-tooltip-arrow{--antd-arrow-background-color:#fa541c;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-geekblue .ant-tooltip-inner{background-color:#2f54eb;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-geekblue .ant-tooltip-arrow{--antd-arrow-background-color:#2f54eb;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-lime .ant-tooltip-inner{background-color:#a0d911;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-lime .ant-tooltip-arrow{--antd-arrow-background-color:#a0d911;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-gold .ant-tooltip-inner{background-color:#faad14;}:where(.css-18jo2e4).ant-tooltip.ant-tooltip-gold .ant-tooltip-arrow{--antd-arrow-background-color:#faad14;}:where(.css-18jo2e4).ant-tooltip-rtl{direction:rtl;}:where(.css-18jo2e4).ant-tooltip .ant-tooltip-arrow{position:absolute;z-index:1;display:block;pointer-events:none;width:16px;height:16px;overflow:hidden;}:where(.css-18jo2e4).ant-tooltip .ant-tooltip-arrow::before{position:absolute;bottom:0;inset-inline-start:0;width:16px;height:8px;background:var(--antd-arrow-background-color);clip-path:polygon(1.6568542494923806px 100%, 50% 1.6568542494923806px, 14.34314575050762px 100%, 1.6568542494923806px 100%);clip-path:path('M 0 8 A 4 4 0 0 0 2.82842712474619 6.82842712474619 L 7.292893218813452 2.363961030678928 A 1 1 0 0 1 8.707106781186548 2.363961030678928 L 13.17157287525381 6.82842712474619 A 4 4 0 0 0 16 8 Z');content:"";}:where(.css-18jo2e4).ant-tooltip .ant-tooltip-arrow::after{content:"";position:absolute;width:8.970562748477143px;height:8.970562748477143px;bottom:0;inset-inline:0;margin:auto;border-radius:0 0 1px 0;transform:translateY(50%) rotate(-135deg);box-shadow:2px 2px 5px rgba(0, 0, 0, 0.05);z-index:0;background:transparent;}:where(.css-18jo2e4).ant-tooltip .ant-tooltip-arrow:before{background:var(--antd-arrow-background-color);}:where(.css-18jo2e4).ant-tooltip-placement-top>.ant-tooltip-arrow,:where(.css-18jo2e4).ant-tooltip-placement-topLeft>.ant-tooltip-arrow,:where(.css-18jo2e4).ant-tooltip-placement-topRight>.ant-tooltip-arrow{bottom:0;transform:translateY(100%) rotate(180deg);}:where(.css-18jo2e4).ant-tooltip-placement-top>.ant-tooltip-arrow{left:50%;transform:translateX(-50%) translateY(100%) rotate(180deg);}:where(.css-18jo2e4).ant-tooltip-placement-topLeft>.ant-tooltip-arrow{left:12px;}:where(.css-18jo2e4).ant-tooltip-placement-topRight>.ant-tooltip-arrow{right:12px;}:where(.css-18jo2e4).ant-tooltip-placement-bottom>.ant-tooltip-arrow,:where(.css-18jo2e4).ant-tooltip-placement-bottomLeft>.ant-tooltip-arrow,:where(.css-18jo2e4).ant-tooltip-placement-bottomRight>.ant-tooltip-arrow{top:0;transform:translateY(-100%);}:where(.css-18jo2e4).ant-tooltip-placement-bottom>.ant-tooltip-arrow{left:50%;transform:translateX(-50%) translateY(-100%);}:where(.css-18jo2e4).ant-tooltip-placement-bottomLeft>.ant-tooltip-arrow{left:12px;}:where(.css-18jo2e4).ant-tooltip-placement-bottomRight>.ant-tooltip-arrow{right:12px;}:where(.css-18jo2e4).ant-tooltip-placement-left>.ant-tooltip-arrow,:where(.css-18jo2e4).ant-tooltip-placement-leftTop>.ant-tooltip-arrow,:where(.css-18jo2e4).ant-tooltip-placement-leftBottom>.ant-tooltip-arrow{right:0;transform:translateX(100%) rotate(90deg);}:where(.css-18jo2e4).ant-tooltip-placement-left>.ant-tooltip-arrow{top:50%;transform:translateY(-50%) translateX(100%) rotate(90deg);}:where(.css-18jo2e4).ant-tooltip-placement-leftTop>.ant-tooltip-arrow{top:8px;}:where(.css-18jo2e4).ant-tooltip-placement-leftBottom>.ant-tooltip-arrow{bottom:8px;}:where(.css-18jo2e4).ant-tooltip-placement-right>.ant-tooltip-arrow,:where(.css-18jo2e4).ant-tooltip-placement-rightTop>.ant-tooltip-arrow,:where(.css-18jo2e4).ant-tooltip-placement-rightBottom>.ant-tooltip-arrow{left:0;transform:translateX(-100%) rotate(-90deg);}:where(.css-18jo2e4).ant-tooltip-placement-right>.ant-tooltip-arrow{top:50%;transform:translateY(-50%) translateX(-100%) rotate(-90deg);}:where(.css-18jo2e4).ant-tooltip-placement-rightTop>.ant-tooltip-arrow{top:8px;}:where(.css-18jo2e4).ant-tooltip-placement-rightBottom>.ant-tooltip-arrow{bottom:8px;}:where(.css-18jo2e4).ant-tooltip-pure{position:relative;max-width:none;margin:16px;}:where(.css-18jo2e4).ant-zoom-big-fast-enter,:where(.css-18jo2e4).ant-zoom-big-fast-appear{animation-duration:0.1s;animation-fill-mode:both;animation-play-state:paused;}:where(.css-18jo2e4).ant-zoom-big-fast-leave{animation-duration:0.1s;animation-fill-mode:both;animation-play-state:paused;}:where(.css-18jo2e4).ant-zoom-big-fast-enter.ant-zoom-big-fast-enter-active,:where(.css-18jo2e4).ant-zoom-big-fast-appear.ant-zoom-big-fast-appear-active{animation-name:css-18jo2e4-antZoomBigIn;animation-play-state:running;}:where(.css-18jo2e4).ant-zoom-big-fast-leave.ant-zoom-big-fast-leave-active{animation-name:css-18jo2e4-antZoomBigOut;animation-play-state:running;pointer-events:none;}:where(.css-18jo2e4).ant-zoom-big-fast-enter,:where(.css-18jo2e4).ant-zoom-big-fast-appear{transform:scale(0);opacity:0;animation-timing-function:cubic-bezier(0.08, 0.82, 0.17, 1);}:where(.css-18jo2e4).ant-zoom-big-fast-enter-prepare,:where(.css-18jo2e4).ant-zoom-big-fast-appear-prepare{transform:none;}:where(.css-18jo2e4).ant-zoom-big-fast-leave{animation-timing-function:cubic-bezier(0.78, 0.14, 0.15, 0.86);}</style><style data-rc-order="prependQueue" data-rc-priority="-999" data-css-hash="_effect-css-18jo2e4-antZoomBigIn">@keyframes css-18jo2e4-antZoomBigIn{0%{transform:scale(0.8);opacity:0;}100%{transform:scale(1);opacity:1;}}</style><style data-rc-order="prependQueue" data-rc-priority="-999" data-css-hash="_effect-css-18jo2e4-antZoomBigOut">@keyframes css-18jo2e4-antZoomBigOut{0%{transform:scale(1);}100%{transform:scale(0.8);opacity:0;}}</style><style data-rc-order="prependQueue" data-css-hash="1lc0vux" data-token-hash="1c2ogvj">.anticon{display:inline-flex;align-items:center;color:inherit;font-style:normal;line-height:0;text-align:center;text-transform:none;vertical-align:-0.125em;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}.anticon >*{line-height:1;}.anticon svg{display:inline-block;}.anticon .anticon .anticon-icon{display:block;}</style><div class="absolute top-0 left-0"><div class="absolute z-max pointer-events-none overflow-hidden box-border" style="width: 474.333px; height: 500px; top: 180.667px; left: 51.3333px; border: 2.66667px solid transparent; border-radius: 10px;"><div class="quick-action-compose-trigger absolute pointer-events-auto bottom-[1px] end-[1px]"><div class="flex items-center gap-1 px-2 py-1 border border-solid rounded-full border-transparent"><div class="quick-action-compose-trigger-icon-wrapper size-2 overflow-hidden flex animate-fade-in rounded-full bg-brand-primary-normal cursor-pointer transition-all duration-200"><img class="quick-action-compose-trigger-icon size-4 transition-all duration-200 opacity-0" src="chrome-extension://difoiogjjojoaoomphldepapgpbgkhkb/assets/logo-O35E636P.png"></div></div></div></div></div></template></sider-quick-compose-btn></div>
+        <!-- 新增按钮容器 -->
+        <div class="button-container">
+            <button onclick="transferText(1)">生成1 →</button>
+            <button onclick="transferText(2)">生成2 →</button>
+        </div>
+        <!-- 在输出textarea的容器外添加一个包裹div，并添加字号调节按钮 -->
+        <div style="position: relative;">
+            <!-- 字号调节按钮容器 -->
+            <div class="font-controls">
+                <button onclick="adjustFontSize(-1)">A-</button>
+                <button onclick="adjustFontSize(1)">A+</button>
+            </div>
+            <textarea id="outputArea" class="textarea-out" readonly="" height="auto"></textarea>
+        </div>
+    </div>
+
+    <script>
+        // 新增字号调节功能
+        let currentFontSize = 16; // 初始字号与CSS一致
+        function adjustFontSize(step) {
+            currentFontSize += step * 1; // 每次调整2px
+            currentFontSize = Math.max(1, Math.min(32, currentFontSize)); // 限制字号范围
+            document.getElementById('outputArea').style.fontSize = currentFontSize + 'px';
+        }
+    </script>
+
+    <script>
+        var s = ["诶，干啥呢！\n", "阿弥陀佛，施主稍安勿躁!\n", "连续点击也是一种乐趣~\n", "点得有点多了哟!\n", "请在左侧输入目录！！！\n"];
+        var tree = [];
+        var cnt = 0;//无效点击次数
+
+        function transferText(type) {
+            //输入交互
+            const inputText = document.getElementById("inputArea").value;//获取输入数据
+            if (inputText.length == 0) {
+                if (cnt == 0) document.getElementById("outputArea").value = "";
+                cnt++;
+                if (cnt < 5) document.getElementById("outputArea").value += "请在左侧输入目录！！！\n";
+                else document.getElementById("outputArea").value += s[Math.ceil(Math.random() * 5) - 1];
+                return;//无数据，则无操作
+            }
+            cnt = 0;
+            document.getElementById("outputArea").value = "";//清空输出框
+
+            // 第一部分，解析成树状结构
+            tree = [];
+            var lines = inputText.split("\n");//按行拆分
+            var fa_stk = [];//父结点栈
+            for (var i = 0; i <= maxlevel; i++) fa_stk[i] = -1;
+            var top = -1;
+            fa_stk[++top] = 0;
+            var maxlevel = 0;
+            for (var i = 0, j = 0; j < lines.length; j++) {
+                //跳过空行
+                if (lines[j].length == 0) continue;
+                //判断当前层级
+                var level = 0;
+                while (lines[j][level] == '-') level++;//统计行首短线数量，知道该行层级
+                if (level > maxlevel) maxlevel = level;//记录最大深度
+
+                //检验输入是否合法
+                if (i == 0 && lines[j].length > 0 && lines[j][0] == '-') {
+                    document.getElementById("outputArea").value = "第 " + (j + 1) + " 行有错误：第一行为主题，行前不加短线。\n";
+                    return;
+                } else if (i > 0 && level == 0) {
+                    document.getElementById("outputArea").value = "第 " + (j + 1) + " 行有错误：请在行前加短线。\n";
+                    return;
+                } else if (level > 0 && top + 1 < level) {
+                    document.getElementById("outputArea").value = "第 " + (j + 1) + " 行有错误：层次不合理。\n";
+                    return;
+                }
+
+                //寻找父结点
+                lines[j] = lines[j].substring(level);//去除行首短线
+                var fa = -1;
+                if (level > 0) {
+                    while (top >= level) fa_stk[top--] = -1;
+                    fa = fa_stk[level - 1], fa_stk[++top] = i;
+                }
+                //记录结点信息，并处理父子关系
+                tree[i] = { id: i, value: lines[j], father: fa, children: [], level: level };//树状节点
+                if (fa >= 0) tree[fa].children.push(i);
+                i++;//有效行加 1
+            }
+
+            // 第二部分，输出为横向树状结构
+            // 计算每个结点的缩进　＝　父结点的缩进 + 父结点数据宽度 + 制表符宽度
+            tree[0].indent = 0;//缩进
+            for (var i = 1; i < tree.length; i++) {
+                tree[i].indent = tree[tree[i].father].indent + tree[tree[i].father].value.length;
+            }
+            //计算每个结点的子树的上下高度 = 孩子结点的上下高度和（自下而上统计即可）
+            for (var i = tree.length - 1; i >= 0; i--) {
+                if (tree[i].children.length == 0) {//叶子结点的上下高度为 1
+                    tree[i].height = 1;
+                } else {//非叶子结点的高度，为子结点上下高度之和
+                    var sum = 0;
+                    for (var j = 0; j < tree[i].children.length; j++) sum += tree[tree[i].children[j]].height;
+                    if (sum == 2 && tree[i].children.length == 2) {
+                        tree[i].height = 3;//只有两个孩子的结点，高度至少设置为3，绘图比较美观
+                        tree[tree[i].children[0]].height = 2;
+                    } else tree[i].height = sum;
+                }
+            }
+            //计算每个节点输出的绝对行号
+            //先从根结点向叶子结点方向梳理，定位每个结点的绝对行号： = 上下偏移量之间的位置 = (up+down)/2;
+            tree[0].up = 0, tree[0].down = tree[0].height - 1;
+            setPos(0, 0, tree[0].height - 1);//递归实现 setPos(id,up,down);
+
+            if (type == 1) {//父节点的位置等于所有子结点位置的中间
+                for (var i = tree.length - 1; i >= 0; i--) {
+                    if (tree[i].children.length == 0) continue;//叶子结点
+                    tree[i].targetRow = Math.floor((tree[tree[i].children[0]].targetRow + tree[tree[i].children[tree[i].children.length - 1]].targetRow) / 2);
+                }
+            } else {//父结点位于整棵子树中间，更强调整体性
+                //从前往后检查，如果至少2个孩子，其中第一个孩子的位置与父结点相同，则递归把父结点位置向下调整一个
+                for (var i = 0; i < tree.length; i++) {
+                    var cur = i;
+                    while (tree[cur].children.length >= 1 && tree[tree[cur].children[0]].targetRow == tree[cur].targetRow) {
+                        if (tree[cur].children.length > 1) tree[cur].targetRow++;
+                        cur = tree[cur].father;
+                        if (cur < 0 || cur >= tree.length) break;
+                        if (tree[cur].children.length == 1) tree[cur].targetRow = tree[tree[cur].children[0]].targetRow;
+                    }
+                }
+            }
+
+            //把输出结果看做一个二维表格，逐层填充
+            var top = [], down = [];//top记录每一列的最上面一个节点偏移量，down记录每一列最下面一个节点的偏移量
+            for (var curlevel = 0; curlevel <= maxlevel; curlevel++) {
+                top[curlevel] = 1000000, down[curlevel] = 0;
+                for (var j = 0; j < tree.length; j++) {
+                    if (tree[j].level == curlevel) {
+                        if (tree[j].targetRow < top[curlevel]) top[curlevel] = tree[j].targetRow;
+                        if (tree[j].targetRow > down[curlevel]) down[curlevel] = tree[j].targetRow;
+                    }
+                }
+            }
+
+            var res = [];
+            for (var i = 0; i < tree[0].height; i++) res[i] = "";
+            for (var curlevel = 0; curlevel <= maxlevel; curlevel++) {//逐层处理
+                for (var i = 0; i < tree.length; i++) {
+                    if (tree[i].level != curlevel) continue;
+                    //根结点特殊处理
+                    if (curlevel == 0) {
+                        //填充所在level的所辖范围
+                        //(1)子树上半部分
+                        for (var j = tree[i].up; j < tree[i].targetRow; j++) for (var k = 0; k < tree[i].value.length; k++) res[j] += "　";
+                        //(2)根结点所在行
+                        res[tree[i].targetRow] += tree[i].value;
+                        //(3)子树下半部分
+                        for (var j = tree[i].targetRow + 1; j <= tree[i].down; j++) for (var k = 0; k < tree[i].value.length; k++) res[j] += "　";
+                    } else {
+                        //填充所在level的所辖范围
+                        var fa = tree[i].father;
+                        //(1)子树上半部分
+
+                        for (var j = tree[i].up; j < tree[i].targetRow; j++) {
+                            if (tree[fa].targetRow == j) res[j] += "┤"; //当前位置无节点，左侧有父结点
+                            else if (i != tree[fa].children[0]) res[j] += "│"; //当前位置无节点，左侧无节点，但还不是首结点
+                            else res[j] += "　";
+                            for (var k = 0; k < tree[i].value.length; k++) res[j] += "　";
+                        }
+                        //(2)根结点所在行
+                        if (tree[fa].children.length == 1) res[tree[i].targetRow] += "－";//只有一个孩子
+                        else if (tree[fa].children.length > 1 && tree[fa].children[0] == i) res[tree[i].targetRow] += "┌";//第一个孩子
+                        else if (tree[fa].children.length > 1 && tree[fa].children[tree[fa].children.length - 1] == i) res[tree[i].targetRow] += "└";//最后一个孩子
+                        else if (tree[i].targetRow == tree[fa].targetRow) res[tree[i].targetRow] += "┼";//否则，若在中间，且与父结点同一行
+                        else res[tree[i].targetRow] += "├";//与父结点不同行
+                        res[tree[i].targetRow] += tree[i].value;
+                        //(3)子树下半部分
+                        for (var j = tree[i].targetRow + 1; j <= tree[i].down; j++) {
+                            if (tree[fa].targetRow == j) res[j] += "┤"; //当前位置无节点，左侧为父结点
+                            else if (i != tree[fa].children[tree[fa].children.length - 1]) res[j] += "│"; //当前位置无节点，左侧无节点，也非最后一个孩子
+                            else res[j] += "　";
+                            for (var k = 0; k < tree[i].value.length; k++) res[j] += "　";
+                        }
+                    }
+                }
+            }
+
+            //填充到输出框
+            for (var i = 0; i < res.length; i++) document.getElementById("outputArea").value += res[i] + "\n";
+
+            // 添加更流畅的动画 
+            outputArea.animate([
+                { transform: 'translateY(-5px)', opacity: 0.9 },
+                { transform: 'translateY(0)', opacity: 1 }
+            ], {
+                duration: 300,
+                easing: 'ease-out'
+            });
+        }
+
+        function setPos(id, up, down) {
+            //处理当前结点
+            if (id < 0 || id >= tree.length) return;
+            tree[id].targetRow = Math.floor((up + down) / 2);
+            tree[id].up = up, tree[id].down = down;
+            //递归处理子结点
+            var pre = 0;
+            for (var i = 0; i < tree[id].children.length; i++) {
+                var ch = tree[id].children[i];
+                setPos(ch, up + pre, up + pre + tree[ch].height - 1);
+                pre += tree[ch].height;
+            }
+        }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const textarea = document.querySelector('.textarea');
+            const numbers = document.querySelector('.numbers');
+            function initLineNumbers() {
+                const lines = calcLines();
+                const lineDoms = Array.from({
+                    length: lines.length,
+                }, (_, i) => `<div>${lines[i] || '&nbsp;'}</div>`);
+                numbers.innerHTML = lineDoms.join('');
+            }
+            const textareaStyles = window.getComputedStyle(textarea);
+            [
+                'fontFamily', 'fontSize', 'fontWeight',
+                'letterSpacing', 'lineHeight', 'padding',
+            ].forEach((property) => {
+                numbers.style[property] = textareaStyles[property];
+            });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const font = `${textareaStyles.fontSize} ${textareaStyles.fontFamily}`;
+            context.font = font;
+            function calcStringLines(sentence, width) {
+                if (!width) return 0;
+                const words = sentence.split('');
+                let lineCount = 0;
+                let currentLine = '';
+                for (let i = 0; i < words.length; i++) {
+                    const wordWidth = context.measureText(words[i]).width;
+                    const lineWidth = context.measureText(currentLine).width;
+                    if (lineWidth + wordWidth > width) {
+                        lineCount++;
+                        currentLine = words[i];
+                    } else {
+                        currentLine += words[i];
+                    }
+                }
+                if (currentLine.trim() !== '') lineCount++;
+                return lineCount;
+            }
+            function calcLines() {
+                const lines = textarea.value.split('\n');
+                const textareaWidth = textarea.getBoundingClientRect().width;
+                const textareaScrollWidth = textareaWidth - textarea.clientWidth;
+                const parseNumber = (v) => v.endsWith('px') ? parseInt(v.slice(0, -2), 10) : 0;
+                const textareaPaddingLeft = parseNumber(textareaStyles.paddingLeft);
+                const textareaPaddingRight = parseNumber(textareaStyles.paddingRight);
+                const textareaContentWidth = textareaWidth - textareaPaddingLeft - textareaPaddingRight - textareaScrollWidth;
+                const numLines = lines.map(lineString => calcStringLines(lineString, textareaContentWidth));
+                let lineNumbers = [];
+                let i = 1;
+                while (numLines.length > 0) {
+                    const numLinesOfSentence = numLines.shift();
+                    lineNumbers.push(i);
+                    if (numLinesOfSentence > 1) {
+                        Array(numLinesOfSentence - 1)
+                            .fill('')
+                            .forEach((_) => lineNumbers.push(''));
+                    }
+                    i++;
+                }
+                return lineNumbers;
+            }
+            const ro = new ResizeObserver(() => {
+                const rect = textarea.getBoundingClientRect();
+                numbers.style.height = `${rect.height}px`;
+                initLineNumbers();
+            });
+            ro.observe(textarea);
+            textarea.addEventListener('scroll', () => {
+                numbers.scrollTop = textarea.scrollTop;
+            });
+            textarea.addEventListener('input', () => {
+                initLineNumbers();
+            });
+        });
+    </script>
