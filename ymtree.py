@@ -1172,10 +1172,29 @@ class YMTreeGenerator(QMainWindow):
         self.preview_text.setPlaceholderText("生成的树状图将在这里显示，您也可以直接编辑调整...")
         right_layout.addWidget(self.preview_text)
         
-        # 添加面板到内容区域
-        content_layout.addWidget(left_panel, 4)  # 比例4
-        content_layout.addWidget(center_panel, 1)  # 比例1
-        content_layout.addWidget(right_panel, 5)  # 比例5
+        # 使用QSplitter实现可调节大小的面板
+        main_splitter = QSplitter(Qt.Horizontal)
+        main_splitter.addWidget(left_panel)
+        main_splitter.addWidget(center_panel)
+        main_splitter.addWidget(right_panel)
+        
+        # 设置初始比例 (40%, 10%, 50%)
+        main_splitter.setSizes([400, 100, 500])
+        
+        # 设置最小宽度
+        left_panel.setMinimumWidth(200)
+        center_panel.setMinimumWidth(150)
+        right_panel.setMinimumWidth(200)
+        
+        # 设置拉伸因子
+        main_splitter.setStretchFactor(0, 4)  # 左侧面板
+        main_splitter.setStretchFactor(1, 1)  # 中间面板
+        main_splitter.setStretchFactor(2, 5)  # 右侧面板
+        
+        # 保存splitter引用以便后续保存状态
+        self.main_splitter = main_splitter
+        
+        content_layout.addWidget(main_splitter)
         
         main_layout.addWidget(content_widget, 1)  # 设置拉伸因子为1，使其占据大部分空间
         
@@ -1233,6 +1252,19 @@ class YMTreeGenerator(QMainWindow):
         if geometry:
             self.restoreGeometry(geometry)
         
+        # 恢复分割器状态
+        if hasattr(self, 'main_splitter'):
+            splitter_state = self.settings.value("splitter_state")
+            if splitter_state:
+                self.main_splitter.restoreState(splitter_state)
+            else:
+                # 如果没有保存的状态，使用默认大小
+                splitter_sizes = self.settings.value("splitter_sizes")
+                if splitter_sizes:
+                    # 转换为整数列表
+                    sizes = [int(size) for size in splitter_sizes]
+                    self.main_splitter.setSizes(sizes)
+        
         # 应用设置
         self.change_theme()
     
@@ -1248,6 +1280,11 @@ class YMTreeGenerator(QMainWindow):
         
         # 保存窗口大小和位置
         self.settings.setValue("geometry", self.saveGeometry())
+        
+        # 保存分割器状态
+        if hasattr(self, 'main_splitter'):
+            self.settings.setValue("splitter_state", self.main_splitter.saveState())
+            self.settings.setValue("splitter_sizes", self.main_splitter.sizes())
     
     def closeEvent(self, event):
         """窗口关闭时保存设置"""
