@@ -1400,7 +1400,37 @@ class YMTreeGenerator(QMainWindow):
             
             # 从GitHub API获取最新版本信息
             api_url = f"https://api.github.com/repos/{github_repo}/releases/latest"
-            response = requests.get(api_url, timeout=10)
+            
+            # 配置SSL和连接设置以避免连接错误
+            import ssl
+            import urllib3
+            from requests.adapters import HTTPAdapter
+            from urllib3.util.retry import Retry
+            
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            # 创建一个session来处理SSL配置和重试机制
+            session = requests.Session()
+            
+            # 配置重试策略
+            retry_strategy = Retry(
+                total=3,
+                backoff_factor=1,
+                status_forcelist=[429, 500, 502, 503, 504],
+            )
+            
+            # 创建适配器
+            adapter = HTTPAdapter(max_retries=retry_strategy)
+            session.mount("http://", adapter)
+            session.mount("https://", adapter)
+            
+            # 设置请求头和SSL配置
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            })
+            session.verify = False  # 临时禁用SSL验证以避免连接问题
+            
+            response = session.get(api_url, timeout=30)
             
             if response.status_code == 200:
                 release_data = response.json()
@@ -1555,9 +1585,20 @@ class YMTreeGenerator(QMainWindow):
                     f"更新文件已保存到：\n{download_path}\n\n您可以稍后手动安装。")
                 
         except requests.exceptions.RequestException as e:
-            QMessageBox.warning(self, "下载失败", f"下载更新文件时发生网络错误：\n{str(e)}")
+            # 网络错误，提供备用方案
+            reply = QMessageBox.question(self, "下载失败", 
+                f"自动下载失败：\n{str(e)}\n\n是否尝试手动下载？",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            
+            if reply == QMessageBox.Yes:
+                # 打开手动下载链接
+                download_url = download_asset.get("browser_download_url")
+                if download_url:
+                    QDesktopServices.openUrl(QUrl(download_url))
+                    QMessageBox.information(self, "手动下载", 
+                        "已在浏览器中打开下载链接。\n\n下载完成后，请手动安装更新文件。")
         except Exception as e:
-            QMessageBox.warning(self, "更新失败", f"自动更新过程中发生错误：\n{str(e)}")
+            QMessageBox.warning(self, "更新失败", f"自动更新过程中发生错误：\n{str(e)}\n\n建议尝试手动下载更新。")
     
     def install_update(self, file_path, file_name):
         """安装更新"""
