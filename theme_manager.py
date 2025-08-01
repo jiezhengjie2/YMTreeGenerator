@@ -444,7 +444,8 @@ def get_vintage_paper_theme(font_size=13):
 
 # 主题映射字典
 THEME_MAP = {
-    ("古朴纸书感", "classic"): get_vintage_paper_theme
+    ("古朴纸书感", "classic"): get_vintage_paper_theme,
+    ("自定义", "custom"): get_vintage_paper_theme  # 自定义主题使用基础样式
 }
 
 def get_theme_list():

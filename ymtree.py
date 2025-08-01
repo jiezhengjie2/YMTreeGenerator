@@ -131,7 +131,15 @@ class PreviewDialog(QDialog):
         self.current_index = self.all_diagrams.index(diagram) if diagram in self.all_diagrams else 0
         self.setWindowTitle(f"预览 - {diagram['name']}")
         self.setModal(True)
-        self.resize(1000, 800)
+        # 启用最大化按钮
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMaximizeButtonHint)
+        
+        # 初始化设置管理器
+        self.settings = QSettings("YMTree", "PreviewDialog")
+        
+        # 加载设置
+        self.load_settings()
+        
         self.init_ui()
         self.load_content()
     
@@ -162,6 +170,8 @@ class PreviewDialog(QDialog):
         self.next_btn.clicked.connect(self.next_diagram)
         nav_layout.addWidget(self.next_btn)
         
+
+        
         layout.addLayout(nav_layout)
         
         # 内容区域
@@ -182,9 +192,39 @@ class PreviewDialog(QDialog):
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
         
-        # 说明内容标题
+        # 说明内容标题和控制按钮
         desc_header_layout = QHBoxLayout()
-        desc_header_layout.addWidget(QLabel("说明内容 (支持Markdown格式):"))
+        desc_header_layout.addWidget(QLabel("说明内容:"))
+        
+        # 格式切换按钮
+        self.format_toggle_btn = QPushButton("Markdown格式")
+        self.format_toggle_btn.setCheckable(True)
+        self.format_toggle_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                           stop:0 #f5deb3, stop:1 #deb887);
+                color: #2f1b14;
+                border: 2px solid #d2b48c;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                padding: 4px 8px;
+                margin-left: 10px;
+            }
+            QPushButton:checked {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                           stop:0 #deb887, stop:1 #cd853f);
+                border-color: #b8860b;
+                color: #ffffff;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                           stop:0 #fff8dc, stop:1 #f5deb3);
+                border-color: #daa520;
+            }
+        """)
+        self.format_toggle_btn.clicked.connect(self.toggle_format_mode)
+        desc_header_layout.addWidget(self.format_toggle_btn)
         
         # 添加Markdown帮助按钮
         self.markdown_help_btn = QPushButton("Markdown语法帮助")
@@ -216,17 +256,16 @@ class PreviewDialog(QDialog):
         desc_header_layout.addStretch()
         right_layout.addLayout(desc_header_layout)
         
-        # 说明内容编辑区域（类似Typora的所见即所得）
+        # 说明内容编辑区域
         self.description_edit = QTextEdit()
         self.description_edit.setFont(QFont("SimSun", 12))
         self.description_edit.textChanged.connect(self.on_description_changed)
-        # 设置为富文本模式以支持HTML渲染
-        self.description_edit.setAcceptRichText(True)
         right_layout.addWidget(self.description_edit)
         
         # 用于存储原始Markdown文本的变量
         self.markdown_text = ""
         self.is_updating = False
+        self.markdown_mode = False  # 当前是否为Markdown模式
         
         content_layout.addWidget(right_panel)
         
@@ -260,11 +299,19 @@ class PreviewDialog(QDialog):
             description_text = self.diagram.get('description', '')
             self.markdown_text = description_text
             
-            # 根据内容是否包含Markdown语法来决定显示方式
+            # 检测是否包含Markdown语法，自动设置格式模式
             if self.has_markdown_syntax(description_text):
+                self.markdown_mode = True
+                self.format_toggle_btn.setChecked(True)
+                self.format_toggle_btn.setText("Markdown格式")
+                self.description_edit.setAcceptRichText(True)
                 html_content = self.convert_markdown_to_html(description_text)
                 self.description_edit.setHtml(html_content)
             else:
+                self.markdown_mode = False
+                self.format_toggle_btn.setChecked(False)
+                self.format_toggle_btn.setText("文本格式")
+                self.description_edit.setAcceptRichText(False)
                 self.description_edit.setPlainText(description_text)
                 
             self.setWindowTitle(f"预览 - {self.diagram['name']}")
@@ -314,16 +361,38 @@ class PreviewDialog(QDialog):
         except Exception as e:
             pass  # 静默处理错误，不显示提示
     
+    def toggle_format_mode(self):
+        """切换格式模式"""
+        self.markdown_mode = self.format_toggle_btn.isChecked()
+        
+        if self.markdown_mode:
+            self.format_toggle_btn.setText("Markdown格式")
+            self.description_edit.setAcceptRichText(True)
+            # 如果当前是纯文本，转换为Markdown渲染
+            current_text = self.description_edit.toPlainText()
+            if current_text.strip():
+                html_content = self.convert_markdown_to_html(current_text)
+                self.description_edit.setHtml(html_content)
+        else:
+            self.format_toggle_btn.setText("文本格式")
+            self.description_edit.setAcceptRichText(False)
+            # 如果当前是HTML，转换为纯文本
+            current_text = self.description_edit.toPlainText()
+            self.description_edit.setPlainText(current_text)
+        
+        # 更新存储的文本
+        self.markdown_text = self.description_edit.toPlainText()
+    
     def on_description_changed(self):
-        """说明内容改变时的处理 - 类似Typora的实时渲染"""
+        """说明内容改变时的处理"""
         if self.is_updating:
             return
             
         # 获取当前文本
         current_text = self.description_edit.toPlainText()
         
-        # 检测是否包含Markdown语法
-        if self.has_markdown_syntax(current_text):
+        # 只在Markdown模式下进行实时渲染
+        if self.markdown_mode and self.has_markdown_syntax(current_text):
             # 包含Markdown语法，渲染为HTML
             self.is_updating = True
             html_content = self.convert_markdown_to_html(current_text)
@@ -344,9 +413,11 @@ class PreviewDialog(QDialog):
         
         # 检测常见的Markdown语法
         markdown_patterns = [
-            r'^#{1,6}\s+',  # 标题
+            r'^#{1,6}\s+',  # 标题（井号+空格）
             r'\*\*.*?\*\*',  # 粗体
             r'\*.*?\*',      # 斜体
+            r'__.*?__',      # 粗体（下划线）
+            r'_.*?_',        # 斜体（下划线）
             r'`.*?`',        # 行内代码
             r'```[\s\S]*?```',  # 代码块
             r'\[.*?\]\(.*?\)',  # 链接
@@ -368,46 +439,78 @@ class PreviewDialog(QDialog):
         # 简单的Markdown转HTML实现
         html = markdown_text
         
-        # 标题转换
+        # 标题转换（支持井号+空格格式）
         import re
-        html = re.sub(r'^# (.+)$', r'<h1>\1</h1>', html, flags=re.MULTILINE)
-        html = re.sub(r'^## (.+)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
-        html = re.sub(r'^### (.+)$', r'<h3>\1</h3>', html, flags=re.MULTILINE)
-        html = re.sub(r'^#### (.+)$', r'<h4>\1</h4>', html, flags=re.MULTILINE)
+        html = re.sub(r'^#{6}\s+(.+)$', r'<h6>\1</h6>', html, flags=re.MULTILINE)
+        html = re.sub(r'^#{5}\s+(.+)$', r'<h5>\1</h5>', html, flags=re.MULTILINE)
+        html = re.sub(r'^#{4}\s+(.+)$', r'<h4>\1</h4>', html, flags=re.MULTILINE)
+        html = re.sub(r'^#{3}\s+(.+)$', r'<h3>\1</h3>', html, flags=re.MULTILINE)
+        html = re.sub(r'^#{2}\s+(.+)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
+        html = re.sub(r'^#{1}\s+(.+)$', r'<h1>\1</h1>', html, flags=re.MULTILINE)
         
-        # 粗体和斜体
+        # 粗体和斜体（支持多种格式）
         html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
+        html = re.sub(r'__(.+?)__', r'<strong>\1</strong>', html)
         html = re.sub(r'\*(.+?)\*', r'<em>\1</em>', html)
+        html = re.sub(r'_(.+?)_', r'<em>\1</em>', html)
         
-        # 代码块
+        # 代码块和行内代码
+        html = re.sub(r'```([\s\S]*?)```', r'<pre><code>\1</code></pre>', html)
         html = re.sub(r'`(.+?)`', r'<code>\1</code>', html)
         
         # 链接
         html = re.sub(r'\[(.+?)\]\((.+?)\)', r'<a href="\2">\1</a>', html)
         
-        # 列表
+        # 处理列表和段落
         lines = html.split('\n')
-        in_list = False
         result_lines = []
+        in_ul_list = False
+        in_ol_list = False
         
         for line in lines:
+            stripped = line.strip()
+            # 无序列表
             if re.match(r'^\s*[-*+]\s+', line):
-                if not in_list:
+                if in_ol_list:
+                    result_lines.append('</ol>')
+                    in_ol_list = False
+                if not in_ul_list:
                     result_lines.append('<ul>')
-                    in_list = True
+                    in_ul_list = True
                 item_text = re.sub(r'^\s*[-*+]\s+', '', line)
                 result_lines.append(f'<li>{item_text}</li>')
-            else:
-                if in_list:
+            # 有序列表
+            elif re.match(r'^\s*\d+\.\s+', line):
+                if in_ul_list:
                     result_lines.append('</ul>')
-                    in_list = False
-                if line.strip():
-                    result_lines.append(f'<p>{line}</p>')
+                    in_ul_list = False
+                if not in_ol_list:
+                    result_lines.append('<ol>')
+                    in_ol_list = True
+                item_text = re.sub(r'^\s*\d+\.\s+', '', line)
+                result_lines.append(f'<li>{item_text}</li>')
+            else:
+                if in_ul_list:
+                    result_lines.append('</ul>')
+                    in_ul_list = False
+                if in_ol_list:
+                    result_lines.append('</ol>')
+                    in_ol_list = False
+                
+                # 处理普通行
+                if stripped:
+                    # 如果不是HTML标签，包装为段落
+                    if not stripped.startswith('<'):
+                        result_lines.append(f'<p>{line}</p>')
+                    else:
+                        result_lines.append(line)
                 else:
                     result_lines.append('<br>')
         
-        if in_list:
+        if in_ul_list:
             result_lines.append('</ul>')
+        if in_ol_list:
+            result_lines.append('</ol>')
         
         return '\n'.join(result_lines)
     
@@ -416,9 +519,25 @@ class PreviewDialog(QDialog):
         help_dialog = MarkdownHelpDialog(self)
         help_dialog.exec_()
     
+    def load_settings(self):
+        """加载窗口设置"""
+        # 恢复窗口大小和位置
+        geometry = self.settings.value("geometry")
+        if geometry:
+            self.restoreGeometry(geometry)
+        else:
+            self.resize(1000, 800)
+    
+    def save_settings(self):
+        """保存窗口设置"""
+        # 保存窗口大小和位置
+        self.settings.setValue("geometry", self.saveGeometry())
+    
+
     def closeEvent(self, event):
         """关闭时自动保存"""
         self.auto_save()
+        self.save_settings()
         super().closeEvent(event)
 
 class HistoryDialog(QDialog):
@@ -428,10 +547,19 @@ class HistoryDialog(QDialog):
         self.parent_window = parent
         self.setWindowTitle("我的树枝图")
         self.setModal(True)
-        self.resize(900, 700)
+        # 启用最大化按钮
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMaximizeButtonHint)
+        
+        # 初始化设置管理器
+        self.settings = QSettings("YMTree", "HistoryDialog")
+        
         # 删除确认设置
         self.delete_confirm_disabled = False
         self.delete_confirm_disable_time = None
+        
+        # 加载设置
+        self.load_settings()
+        
         self.init_ui()
         self.load_diagrams()
     
@@ -450,7 +578,7 @@ class HistoryDialog(QDialog):
         self.filter_combo.currentIndexChanged.connect(self.filter_diagrams)
         filter_layout.addWidget(self.filter_combo)
         
-        # 添加删除主题按钮 - 古朴纸书感设计
+        # 添加删除主题按钮 - 古朴纸书感设计（增大尺寸）
         self.delete_topic_btn = QPushButton("删除当前主题")
         self.delete_topic_btn.setStyleSheet("""
             QPushButton {
@@ -458,11 +586,13 @@ class HistoryDialog(QDialog):
                                            stop:0 #d2b48c, stop:1 #bc9a6a);
                 color: #2f1b14;
                 border: 2px solid #a0522d;
-                border-radius: 6px;
-                font-size: 11px;
+                border-radius: 8px;
+                font-size: 14px;
                 font-weight: 600;
-                padding: 6px 12px;
+                padding: 10px 18px;
                 margin-left: 10px;
+                min-width: 120px;
+                min-height: 35px;
             }
             QPushButton:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
@@ -483,6 +613,61 @@ class HistoryDialog(QDialog):
         self.delete_topic_btn.clicked.connect(self.delete_current_topic)
         self.delete_topic_btn.setEnabled(False)  # 默认禁用
         filter_layout.addWidget(self.delete_topic_btn)
+        
+        # 添加字号下拉框
+        filter_layout.addWidget(QLabel("字号:"))
+        self.table_font_combo = QComboBox()
+        table_font_sizes = [18, 20, 22, 24, 26, 28, 30]
+        for size in table_font_sizes:
+            self.table_font_combo.addItem(f"{size}px", size)
+        # 使用已保存的字号设置
+        default_index = self.table_font_combo.findData(self.current_font_size)
+        if default_index >= 0:
+            self.table_font_combo.setCurrentIndex(default_index)
+        self.table_font_combo.currentIndexChanged.connect(self.change_table_font_size_direct)
+        self.table_font_combo.setStyleSheet("""
+            QComboBox {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                          stop:0 #faf6f0, stop:1 #f0ead6);
+                border: 2px solid #d4c4a8;
+                border-radius: 8px;
+                padding: 8px 12px;
+                color: #3c2e26;
+                font-size: 14px;
+                min-width: 80px;
+                min-height: 20px;
+                font-weight: 500;
+                margin-left: 5px;
+            }
+            QComboBox:hover {
+                border-color: #b8860b;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                          stop:0 #fff8f0, stop:1 #f5f0e6);
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 25px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 6px solid transparent;
+                border-right: 6px solid transparent;
+                border-top: 6px solid #5d4e37;
+                margin-right: 8px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #faf6f0;
+                border: 2px solid #d4c4a8;
+                border-radius: 8px;
+                selection-background-color: #deb887;
+                color: #3c2e26;
+                padding: 6px;
+                font-size: 14px;
+            }
+        """)
+        filter_layout.addWidget(self.table_font_combo)
+        
+
         
         filter_layout.addStretch()
         layout.addLayout(filter_layout)
@@ -511,78 +696,125 @@ class HistoryDialog(QDialog):
         header.setDefaultAlignment(Qt.AlignCenter | Qt.AlignVCenter)  # 表头文字居中
         header.setHighlightSections(False)  # 禁用头部高亮
         
-        # 优化行高和间距 - 增加行高以完全显示操作按钮
-        self.table.verticalHeader().setDefaultSectionSize(80) # 行高
+        # 优化行高和间距 - 根据字号动态调整行高以完全显示操作按钮和名称专题列字体
+        current_font_size = getattr(self, 'current_font_size', 20)
+        scale_factor = current_font_size / 20.0
+        # 根据当前字号动态计算合适的行高
+        base_height = max(80, current_font_size * 4)  # 行高至少为字号的4倍
+        row_height = int(base_height * scale_factor)
+        self.table.verticalHeader().setDefaultSectionSize(row_height) # 行高
         
         # 设置古朴纸书感表格样式
-        self.table.setStyleSheet("""
-            QTableWidget {
+        self.update_table_style()
+        
+    def update_table_style(self):
+        """更新表格样式，使用表格字号"""
+        # 获取表格字号
+        font_size = getattr(self, 'table_font_size', 16)
+        
+        self.table.setStyleSheet(f"""
+            QTableWidget {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                                          stop:0 #f5f5dc, stop:1 #f0e68c);
+                                          stop:0 #fefcf8, stop:1 #f8f4f0);
                 alternate-background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                                                          stop:0 #faf0e6, stop:1 #f5deb3);
-                color: #8B4513;
-                border: 2px solid #daa520;
-                border-radius: 8px;
-                gridline-color: #daa520;
-                font-size: 16px;
+                                                          stop:0 #faf8f5, stop:1 #f5f0e6);
+                color: #3c2e26;
+                border: 2px solid #d4c4a8;
+                border-radius: 12px;
+                gridline-color: #e8dcc0;
+                font-size: {font_size}px;
                 selection-background-color: #deb887;
-            }
-            QTableWidget::item {
-                padding: 12px 8px;
-                border-bottom: 1px solid #daa520;
-                color: #8B4513;
-                background-color: #f5f5dc;
-            }
-            QTableWidget::item:alternate {
-                background-color: #faf0e6;
-            }
-            QTableWidget::item:selected {
+                font-family: "Microsoft YaHei", "SimHei", serif;
+            }}
+            QTableWidget::item {{
+                padding: 15px 12px;
+                border-bottom: 1px solid #e8dcc0;
+                color: #3c2e26;
+                background-color: transparent;
+                font-weight: 500;
+            }}
+            QTableWidget::item:alternate {{
+                background-color: transparent;
+            }}
+            QTableWidget::item:selected {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
                                           stop:0 #deb887, stop:1 #cd853f);
                 color: #2f1b14;
-            }
-            QTableWidget::item:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                                          stop:0 #f0e68c, stop:1 #daa520);
-            }
-            QHeaderView::section {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                                          stop:0 #daa520, stop:1 #b8860b);
-                color: #2f1b14;
-                padding: 12px 8px;
-                border: 1px solid #b8860b;
-                border-radius: 4px;
                 font-weight: 600;
-                font-size: 16px;
-            }
-            QHeaderView::section:hover {
+            }}
+            /* 优化表头样式 - 古朴纸书感 */
+            QHeaderView::section {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                          stop:0 #f0ead6, stop:1 #e8dcc0);
+                border: 2px solid #d4c4a8;
+                border-radius: 6px;
+                padding: 12px 15px;
+                color: #5d4e37;
+                font-weight: 700;
+                font-size: {font_size + 2}px;
+                font-family: "Microsoft YaHei", "SimHei", serif;
+                text-align: center;
+                margin: 2px;
+            }}
+            QHeaderView::section:hover {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                          stop:0 #f5f0e6, stop:1 #ede0d0);
+                border-color: #b8860b;
+            }}
+            /* 优化垂直表头（序号）样式 */
+            QHeaderView::section:vertical {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                          stop:0 #f0ead6, stop:1 #e8dcc0);
+                border: 2px solid #d4c4a8;
+                border-radius: 6px;
+                padding: 8px 12px;
+                color: #5d4e37;
+                font-weight: 600;
+                font-size: {font_size}px;
+                font-family: "Microsoft YaHei", "SimHei", serif;
+                text-align: center;
+                margin: 1px;
+                min-width: 50px;
+            }}
+            QHeaderView::section:vertical:hover {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                          stop:0 #f5f0e6, stop:1 #ede0d0);
+                border-color: #b8860b;
+            }}
+            QTableWidget::item:hover {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
                                           stop:0 #f0e68c, stop:1 #daa520);
-            }
-            QScrollBar:vertical {
+            }}
+            QScrollBar:vertical {{
                 border: 2px solid #daa520;
                 background: #f5f5dc;
                 width: 16px;
                 border-radius: 8px;
-            }
-            QScrollBar::handle:vertical {
+            }}
+            QScrollBar::handle:vertical {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
                                           stop:0 #daa520, stop:1 #b8860b);
                 min-height: 20px;
                 border-radius: 6px;
                 border: 1px solid #b8860b;
-            }
-            QScrollBar::handle:vertical:hover {
+            }}
+            QScrollBar::handle:vertical:hover {{
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
                                           stop:0 #f0e68c, stop:1 #daa520);
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
                 height: 0px;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
                 background: none;
-            }
+            }}
+            /* 表格右上角空白区域样式 */
+            QTableWidget QTableCornerButton::section {{
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                          stop:0 #f0ead6, stop:1 #e8dcc0);
+                border: 2px solid #d4c4a8;
+                border-radius: 6px;
+            }}
         """)
 
         # 加载图表数据
@@ -597,6 +829,51 @@ class HistoryDialog(QDialog):
         
         # 初始化排序状态
         self.sort_orders = {0: None, 1: None, 2: None, 3: None}  # 各列的排序状态
+        
+        # 恢复列宽设置
+        self.restore_column_widths()
+
+    def load_settings(self):
+        """加载窗口设置"""
+        # 恢复窗口大小和位置
+        geometry = self.settings.value("geometry")
+        if geometry:
+            self.restoreGeometry(geometry)
+        else:
+            self.resize(900, 700)
+        
+        # 恢复字号设置
+        font_size = self.settings.value("font_size", 18, type=int)
+        # 确保字号在18-30范围内
+        if font_size < 18:
+            font_size = 18
+        elif font_size > 30:
+            font_size = 30
+        self.current_font_size = font_size
+    
+    def save_settings(self):
+        """保存窗口设置"""
+        # 保存窗口大小和位置
+        self.settings.setValue("geometry", self.saveGeometry())
+        
+        # 保存字号设置
+        self.settings.setValue("font_size", self.current_font_size)
+        
+        # 保存列宽设置
+        self.save_column_widths()
+    
+    def save_column_widths(self):
+        """保存表格列宽"""
+        for i in range(self.table.columnCount()):
+            width = self.table.columnWidth(i)
+            self.settings.setValue(f"column_{i}_width", width)
+    
+    def restore_column_widths(self):
+        """恢复表格列宽"""
+        for i in range(self.table.columnCount()):
+            width = self.settings.value(f"column_{i}_width", type=int)
+            if width:
+                self.table.setColumnWidth(i, width)
 
     def load_diagrams(self, topic_id=None):
         """从数据库加载图表"""
@@ -622,12 +899,7 @@ class HistoryDialog(QDialog):
         self.init_table()
         self.populate_table()
         
-        # 默认选中第一行并触发预览效果
-        if len(self.current_diagrams) > 0:
-            self.table.selectRow(0)
-            # 使用QTimer延迟执行预览，确保界面完全加载后再触发
-            from PyQt5.QtCore import QTimer
-            QTimer.singleShot(100, lambda: self.preview_diagram(0))
+        # 移除自动预览功能，只在用户主动操作时才预览
     
     def init_table(self):
         """初始化表格"""
@@ -653,6 +925,11 @@ class HistoryDialog(QDialog):
             name_item.setData(Qt.UserRole, i)  # 存储行索引用于预览
             # 设置古朴纸书感字体颜色和背景色
             name_item.setForeground(QColor("#8B4513"))  # 深棕色，古朴感
+            # 根据表格字号设置字体大小
+            table_font_size = getattr(self, 'table_font_size', 20)
+            name_font = QFont()
+            name_font.setPointSize(table_font_size)
+            name_item.setFont(name_font)
             # 确保背景为亮色
             if i % 2 == 0:
                 name_item.setBackground(QColor("#f5f5dc"))
@@ -665,6 +942,11 @@ class HistoryDialog(QDialog):
             topic_item.setTextAlignment(Qt.AlignCenter)
             # 设置古朴纸书感字体颜色和背景色
             topic_item.setForeground(QColor("#8B4513"))  # 深棕色，古朴感
+            # 根据表格字号设置字体大小
+            table_font_size = getattr(self, 'table_font_size', 20)
+            topic_font = QFont()
+            topic_font.setPointSize(table_font_size)
+            topic_item.setFont(topic_font)
             # 确保背景为亮色
             if i % 2 == 0:
                 topic_item.setBackground(QColor("#f5f5dc"))
@@ -697,62 +979,74 @@ class HistoryDialog(QDialog):
             
             # 操作列 - 现代化按钮设计
             btn_widget = QWidget()
-            # 确保操作列背景为亮色
-            if i % 2 == 0:
-                btn_widget.setStyleSheet("background-color: #f5f5dc;")
-            else:
-                btn_widget.setStyleSheet("background-color: #faf0e6;")
+            # 设置操作列容器为透明背景，避免多层框效果
+            btn_widget.setStyleSheet("background-color: transparent; border: none;")
             btn_layout = QHBoxLayout(btn_widget)
-            btn_layout.setContentsMargins(15, 15, 15, 15)  # 增加边距提升视觉效果
-            btn_layout.setSpacing(15)  # 增加按钮间距
+            btn_layout.setContentsMargins(8, 8, 8, 8)  # 减少边距
+            btn_layout.setSpacing(10)  # 减少按钮间距
             btn_layout.setAlignment(Qt.AlignCenter)  # 水平居中对齐
             
-            # 查看按钮 - 古朴纸书感设计
+            # 查看按钮 - 优化设计，避免多层框效果
             view_btn = QPushButton("查看")
-            view_btn.setFixedSize(80, 45)  # 增大按钮尺寸提升可点击性
-            view_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: transparent;
+            # 获取表格字号
+            button_font_size = getattr(self, 'table_font_size', 16)
+            # 根据字号调整按钮尺寸
+            scale_factor = button_font_size / 16.0
+            btn_width = int(75 * scale_factor)
+            btn_height = int(35 * scale_factor)
+            view_btn.setFixedSize(btn_width, btn_height)
+            # 使用渐变背景和阴影效果，提升视觉层次
+            view_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                              stop:0 #f5deb3, stop:1 #deb887);
                     color: #3c2e26;
-                    border: 2px solid #b8860b;
-                    border-radius: 8px;
-                    font-size: 13px;
+                    border: 1px solid #d2b48c;
+                    border-radius: 6px;
+                    font-size: {button_font_size}px;
                     font-weight: 600;
-                    padding: 4px 8px;
-                }
-                QPushButton:hover {
-                    background-color: #deb887;
+                    padding: 2px 6px;
+                }}
+                QPushButton:hover {{
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                              stop:0 #fff8dc, stop:1 #f0e68c);
                     border-color: #daa520;
-                }
-                QPushButton:pressed {
-                    background-color: #cd853f;
-                    border-color: #a0522d;
-                }
+                    color: #2f1b14;
+                }}
+                QPushButton:pressed {{
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                              stop:0 #deb887, stop:1 #cd853f);
+                    border-color: #b8860b;
+                }}
             """)
             view_btn.clicked.connect(lambda checked, row=i: self.preview_diagram(row))
             btn_layout.addWidget(view_btn)
             
-            # 删除按钮 - 古朴纸书感设计
+            # 删除按钮 - 优化设计，避免多层框效果
             delete_btn = QPushButton("删除")
-            delete_btn.setFixedSize(80, 45)  # 与查看按钮保持一致的尺寸
-            delete_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: transparent;
+            delete_btn.setFixedSize(btn_width, btn_height)  # 与查看按钮保持一致的尺寸
+            delete_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                              stop:0 #f4a460, stop:1 #d2b48c);
                     color: #2f1b14;
-                    border: 2px solid #a0522d;
-                    border-radius: 8px;
-                    font-size: 13px;
+                    border: 1px solid #cd853f;
+                    border-radius: 6px;
+                    font-size: {button_font_size}px;
                     font-weight: 600;
-                    padding: 4px 8px;
-                }
-                QPushButton:hover {
-                    background-color: #d2b48c;
+                    padding: 2px 6px;
+                }}
+                QPushButton:hover {{
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                              stop:0 #daa520, stop:1 #b8860b);
+                    border-color: #a0522d;
+                    color: #ffffff;
+                }}
+                QPushButton:pressed {{
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                              stop:0 #cd853f, stop:1 #a0522d);
                     border-color: #8b4513;
-                }
-                QPushButton:pressed {
-                    background-color: #bc9a6a;
-                    border-color: #654321;
-                }
+                }}
             """)
             delete_btn.clicked.connect(lambda checked, row=i: self.delete_diagram(row))
             btn_layout.addWidget(delete_btn)
@@ -970,6 +1264,10 @@ class HistoryDialog(QDialog):
             except Exception as e:
                 QMessageBox.warning(self, "错误", f"删除主题失败：{str(e)}")
     
+
+    
+
+    
     def reload_filter_combo(self):
         """重新加载筛选下拉框"""
         current_selection = self.filter_combo.currentData()
@@ -990,9 +1288,50 @@ class HistoryDialog(QDialog):
         else:
             self.filter_combo.setCurrentIndex(0)  # 选择"全部"
     
-
+    def change_table_font_size_direct(self):
+        """直接改变表格字号（用于树枝图界面的下拉框）"""
+        try:
+            # 获取选中的字号
+            font_size = self.table_font_combo.currentData()
+            if font_size is None:
+                return
+            
+            # 确保字号在18-30范围内
+            if font_size < 18:
+                font_size = 18
+            elif font_size > 30:
+                font_size = 30
+            
+            # 更新实例属性
+            self.table_font_size = font_size
+            self.name_topic_font_size = font_size
+            self.button_font_size = font_size
+            self.current_font_size = font_size
+            
+            # 保存字号设置到HistoryDialog的设置中
+            self.settings.setValue("font_size", font_size)
+            
+            # 通过parent_window保存设置
+            if hasattr(self, 'parent_window') and self.parent_window:
+                self.parent_window.table_font_size = font_size
+                self.parent_window.name_topic_font_size = font_size
+                self.parent_window.button_font_size = font_size
+                self.parent_window.save_settings()
+            
+            # 更新表格样式
+            if hasattr(self, 'table'):
+                self.update_table_style()
+                self.populate_table()
+            
+        except Exception as e:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "错误", f"应用字号设置失败：{str(e)}")
     
 
+    def closeEvent(self, event):
+        """窗口关闭时保存设置"""
+        self.save_settings()
+        super().closeEvent(event)
     
 
 
@@ -1001,6 +1340,19 @@ class YMTreeGenerator(QMainWindow):
         super().__init__()
         self.db_manager = DatabaseManager()
         self.settings = QSettings("YMTree", "YMTreeGenerator")
+        
+        # 初始化自定义颜色设置
+        self.custom_colors = {
+            'background_start': '#faf6f0',
+            'background_end': '#f0ead6',
+            'table_background': '#f5f5dc',
+            'table_alternate': '#faf0e6',
+            'text_color': '#8B4513',
+            'border_color': '#daa520',
+            'button_background': '#deb887',
+            'button_hover': '#cd853f'
+        }
+        
         self.setWindowTitle("义脉树枝图生成器")
         self.setGeometry(100, 100, 1200, 800)
         self.initUI()
@@ -1022,49 +1374,39 @@ class YMTreeGenerator(QMainWindow):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
         
-        # 添加主题选择到工具栏
-        theme_label = QLabel("主题模式：")
-        toolbar.addWidget(theme_label)
-        
+        # 添加主题选择器到工具栏
+        toolbar.addWidget(QLabel("主题:"))
         self.theme_combo = QComboBox()
-        self.theme_combo.setFixedWidth(150)
-        
-        # 添加主题选项
         themes = get_theme_list()
         for theme_tuple in themes:
             theme_name, theme_key = theme_tuple
             self.theme_combo.addItem(theme_name, theme_key)
-        
         self.theme_combo.currentIndexChanged.connect(self.change_theme)
         toolbar.addWidget(self.theme_combo)
         toolbar.addSeparator()
         
-        # 添加字号调整到工具栏
-        font_label = QLabel("字号大小：")
-        toolbar.addWidget(font_label)
-        
+        # 添加字号选择器到工具栏
+        toolbar.addWidget(QLabel("字号:"))
         self.font_size_combo = QComboBox()
-        self.font_size_combo.setFixedWidth(80)
-        
-        # 添加字号选项
         font_sizes = [18, 20, 22, 24, 26, 28, 30]
         for size in font_sizes:
             self.font_size_combo.addItem(f"{size}px", size)
-        
-        # 默认选择20px
-        default_index = self.font_size_combo.findData(20)
+        default_index = self.font_size_combo.findData(18)
         if default_index >= 0:
             self.font_size_combo.setCurrentIndex(default_index)
-        
-        self.font_size_combo.currentIndexChanged.connect(self.change_font_size)
+        self.font_size_combo.currentIndexChanged.connect(self.change_main_font_size)
         toolbar.addWidget(self.font_size_combo)
         toolbar.addSeparator()
         
+        # 设置主界面字号
+        self.main_font_size = 18
+        self.current_font_size = 18
+        
         # 添加检查更新按钮到工具栏
-        update_btn = QPushButton("检查更新")
-        update_btn.setFixedWidth(120)
-        update_btn.clicked.connect(self.check_for_updates)
-        toolbar.addWidget(update_btn)
+        self.update_btn = QPushButton("检查更新")
+        self.update_btn.setMinimumWidth(120)
+        self.update_btn.clicked.connect(self.check_for_updates)
+        toolbar.addWidget(self.update_btn)
         
         # 添加状态栏
         status_bar = QStatusBar()
@@ -1228,42 +1570,170 @@ class YMTreeGenerator(QMainWindow):
         
         # 应用默认样式
         # self.theme_combo.setCurrentIndex(0)  # 默认使用第一个主题
-
-    def change_theme(self, index=None):
-        """切换主题"""
-        theme_data = self.theme_combo.currentData()
-        font_size = self.font_size_combo.currentData() if hasattr(self, 'font_size_combo') else 13
         
-        # 应用选中的主题
-        theme_style = get_theme_style(theme_data, font_size)
+        # 初始化工具栏控件大小
+        self.update_toolbar_sizes()
+
+    def change_theme(self, theme_key=None):
+        """切换主题"""
+        # 获取主题数据
+        if theme_key is None:
+            theme_key = getattr(self, 'current_theme', 'classic')
+        else:
+            self.current_theme = theme_key
+            
+        font_size = getattr(self, 'main_font_size', 20)
+        
+        # 如果有自定义颜色设置且主题为custom，使用自定义样式
+        if theme_key == "custom" and hasattr(self, 'custom_colors') and self.custom_colors:
+            theme_style = self.get_custom_theme_style(font_size)
+        else:
+            # 应用选中的主题
+            theme_style = get_theme_style(theme_key, font_size)
+        
         self.setStyleSheet(theme_style)
         
-        # 保存主题设置（仅在用户手动切换时保存）
-        if index is not None:
-            self.save_settings()
+        # 保存主题设置
+        self.save_settings()
     
-    def change_font_size(self, index):
+    def change_font_size(self, font_size=None):
         """改变字号大小"""
+        if font_size is not None:
+            # 确保字号在18-30范围内
+            if font_size < 18:
+                font_size = 18
+            elif font_size > 30:
+                font_size = 30
+            self.current_font_size = font_size
+        
         # 重新应用当前主题以更新字号
         self.change_theme()
+        # 更新表格字号
+        if hasattr(self, 'table'):
+            self.update_table_style()
+            # 重新填充表格以应用新的名称和专题列字号
+            self.populate_table()
+        # 更新工具栏控件大小
+        self.update_toolbar_sizes()
         # 保存字号设置
         self.save_settings()
+    
+    def change_main_font_size(self):
+        """改变主界面字号"""
+        font_size = self.font_size_combo.currentData()
+        if font_size:
+            # 确保字号在18-30范围内
+            if font_size < 18:
+                font_size = 18
+            elif font_size > 30:
+                font_size = 30
+            self.main_font_size = font_size
+            self.current_font_size = font_size  # 兼容性
+            self.change_font_size(font_size)
+            self.save_settings()
+            self.update_toolbar_sizes()
+    
+    def change_table_font_size(self):
+        """改变表格字号"""
+        if hasattr(self, 'table_font_combo'):
+            font_size = self.table_font_combo.currentData()
+            if font_size:
+                # 确保字号在18-30范围内
+                if font_size < 18:
+                    font_size = 18
+                elif font_size > 30:
+                    font_size = 30
+                self.table_font_size = font_size
+                # 名称专题列和按钮使用表格字号
+                self.name_topic_font_size = font_size
+                self.button_font_size = font_size
+                self.save_settings()
+                # 如果有表格，更新表格样式
+                if hasattr(self, 'table'):
+                    self.update_table_style()
+                    self.populate_table()
+    
+    def change_table_font_size_direct(self):
+        """直接改变表格字号（用于树枝图界面的下拉框）"""
+        if hasattr(self, 'table_font_combo'):
+            font_size = self.table_font_combo.currentData()
+            if font_size:
+                self.table_font_size = font_size
+                self.name_topic_font_size = font_size
+                self.button_font_size = font_size
+                self.save_settings()
+                if hasattr(self, 'table'):
+                    self.update_table_style()
+                    self.populate_table()
+    
+    def update_toolbar_sizes(self):
+        """根据主界面字号更新工具栏控件大小"""
+        # 获取主界面字号，从设置中获取
+        font_size = getattr(self, 'main_font_size', 20)
+        
+        # 根据字号调整控件大小
+        scale_factor = font_size / 20.0  # 以20px为基准
+        
+        # 调整检查更新按钮
+        if hasattr(self, 'update_btn'):
+            min_width = int(120 * scale_factor)
+            self.update_btn.setMinimumWidth(min_width)
+            self.update_btn.updateGeometry()
     
     def load_settings(self):
         """加载用户设置"""
         # 加载主题设置
-        theme = self.settings.value("theme", "classic")
-        theme_index = self.theme_combo.findData(theme)
-        if theme_index >= 0:
-            self.theme_combo.setCurrentIndex(theme_index)
-        else:
-            self.theme_combo.setCurrentIndex(0)  # 默认选择第一个主题
+        self.current_theme = self.settings.value("theme", "classic")
         
         # 加载字号设置
-        font_size = int(self.settings.value("font_size", 13))
-        font_index = self.font_size_combo.findData(font_size)
-        if font_index >= 0:
-            self.font_size_combo.setCurrentIndex(font_index)
+        font_size = int(self.settings.value("font_size", 18))
+        # 确保字号在18-30范围内
+        if font_size < 18:
+            font_size = 18
+        elif font_size > 30:
+            font_size = 30
+        self.current_font_size = font_size
+        
+        # 加载不同界面的字号设置
+        main_font_size = int(self.settings.value("main_font_size", 18))
+        if main_font_size < 18:
+            main_font_size = 18
+        elif main_font_size > 30:
+            main_font_size = 30
+        self.main_font_size = main_font_size
+        
+        table_font_size = int(self.settings.value("table_font_size", 18))
+        if table_font_size < 18:
+            table_font_size = 18
+        elif table_font_size > 30:
+            table_font_size = 30
+        self.table_font_size = table_font_size
+        
+        name_topic_font_size = int(self.settings.value("name_topic_font_size", 18))
+        if name_topic_font_size < 18:
+            name_topic_font_size = 18
+        elif name_topic_font_size > 30:
+            name_topic_font_size = 30
+        self.name_topic_font_size = name_topic_font_size
+        
+        button_font_size = int(self.settings.value("button_font_size", 18))
+        if button_font_size < 18:
+            button_font_size = 18
+        elif button_font_size > 30:
+            button_font_size = 30
+        self.button_font_size = button_font_size
+        
+        # 加载自定义颜色设置
+        self.custom_colors = {
+            'background_start': self.settings.value('color_background_start', '#faf6f0'),
+            'background_end': self.settings.value('color_background_end', '#f0ead6'),
+            'table_background': self.settings.value('color_table_background', '#f5f5dc'),
+            'table_alternate': self.settings.value('color_table_alternate', '#faf0e6'),
+            'text_color': self.settings.value('color_text_color', '#8B4513'),
+            'border_color': self.settings.value('color_border_color', '#daa520'),
+            'button_background': self.settings.value('color_button_background', '#deb887'),
+            'button_hover': self.settings.value('color_button_hover', '#cd853f')
+        }
         
         # 加载窗口大小和位置
         geometry = self.settings.value("geometry")
@@ -1283,18 +1753,41 @@ class YMTreeGenerator(QMainWindow):
                     sizes = [int(size) for size in splitter_sizes]
                     self.main_splitter.setSizes(sizes)
         
+        # 同步工具栏主题选择器
+        if hasattr(self, 'theme_combo'):
+            theme_index = self.theme_combo.findData(self.current_theme)
+            if theme_index >= 0:
+                self.theme_combo.setCurrentIndex(theme_index)
+        
+        # 同步主界面字号下拉框
+        if hasattr(self, 'font_size_combo'):
+            font_index = self.font_size_combo.findData(self.main_font_size)
+            if font_index >= 0:
+                self.font_size_combo.setCurrentIndex(font_index)
+        
         # 应用设置
         self.change_theme()
     
     def save_settings(self):
         """保存用户设置"""
         # 保存主题设置
-        theme_data = self.theme_combo.currentData()
+        theme_data = getattr(self, 'current_theme', 'classic')
         self.settings.setValue("theme", theme_data)
         
         # 保存字号设置
-        font_size = self.font_size_combo.currentData()
+        font_size = getattr(self, 'current_font_size', 20)
         self.settings.setValue("font_size", font_size)
+        
+        # 保存不同界面的字号设置
+        self.settings.setValue("main_font_size", getattr(self, 'main_font_size', 20))
+        self.settings.setValue("table_font_size", getattr(self, 'table_font_size', 20))
+        self.settings.setValue("name_topic_font_size", getattr(self, 'name_topic_font_size', 20))
+        self.settings.setValue("button_font_size", getattr(self, 'button_font_size', 20))
+        
+        # 保存自定义颜色设置
+        if hasattr(self, 'custom_colors'):
+            for key, value in self.custom_colors.items():
+                self.settings.setValue(f"color_{key}", value)
         
         # 保存窗口大小和位置
         self.settings.setValue("geometry", self.saveGeometry())
@@ -1303,6 +1796,314 @@ class YMTreeGenerator(QMainWindow):
         if hasattr(self, 'main_splitter'):
             self.settings.setValue("splitter_state", self.main_splitter.saveState())
             self.settings.setValue("splitter_sizes", self.main_splitter.sizes())
+    
+    def show_settings_dialog(self):
+        """显示设置对话框"""
+        from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
+                                   QPushButton, QTabWidget, QWidget, QSpinBox,
+                                   QColorDialog, QGroupBox, QGridLayout, QSlider,
+                                   QCheckBox, QLineEdit, QTextEdit, QComboBox)
+        from PyQt5.QtCore import Qt
+        from PyQt5.QtGui import QColor, QFont
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle("程序设置")
+        dialog.setModal(True)
+        dialog.resize(600, 500)
+        
+        # 初始化自定义颜色字典
+        if not hasattr(self, 'custom_colors'):
+            self.custom_colors = {
+                'background_start': '#faf6f0',
+                'background_end': '#f0ead6',
+                'table_background': '#f5f5dc',
+                'table_alternate': '#faf0e6',
+                'text_color': '#8B4513',
+                'border_color': '#daa520',
+                'button_background': '#deb887',
+                'button_hover': '#cd853f'
+            }
+        
+        layout = QVBoxLayout(dialog)
+        
+        # 创建选项卡
+        tab_widget = QTabWidget()
+        
+        # 字体设置选项卡
+        font_tab = QWidget()
+        font_layout = QVBoxLayout(font_tab)
+        
+        # 全局字号设置组
+        font_group = QGroupBox("全局字号设置")
+        font_group_layout = QGridLayout(font_group)
+        
+        # 主界面字号
+        font_group_layout.addWidget(QLabel("主界面字号:"), 0, 0)
+        main_font_spin = QSpinBox()
+        main_font_spin.setRange(18, 30)
+        main_font_spin.setValue(getattr(self, 'main_font_size', 18))
+        font_group_layout.addWidget(main_font_spin, 0, 1)
+        
+        # 表格字号
+        font_group_layout.addWidget(QLabel("表格字号:"), 1, 0)
+        table_font_spin = QSpinBox()
+        table_font_spin.setRange(18, 30)
+        table_font_spin.setValue(getattr(self, 'table_font_size', 18))
+        font_group_layout.addWidget(table_font_spin, 1, 1)
+        
+        font_layout.addWidget(font_group)
+        
+        # 主题设置组
+        theme_group = QGroupBox("主题设置")
+        theme_layout = QGridLayout(theme_group)
+        
+        theme_layout.addWidget(QLabel("当前主题:"), 0, 0)
+        theme_combo_settings = QComboBox()
+        themes = get_theme_list()
+        for theme_tuple in themes:
+            theme_name, theme_key = theme_tuple
+            theme_combo_settings.addItem(theme_name, theme_key)
+        
+        # 设置当前选择
+        current_theme = getattr(self, 'current_theme', 'vintage_paper')
+        theme_index = theme_combo_settings.findData(current_theme)
+        if theme_index >= 0:
+            theme_combo_settings.setCurrentIndex(theme_index)
+        
+        theme_layout.addWidget(theme_combo_settings, 0, 1)
+        font_layout.addWidget(theme_group)
+        
+        tab_widget.addTab(font_tab, "字体主题")
+        
+        layout.addWidget(tab_widget)
+        
+        # 按钮区域
+        button_layout = QHBoxLayout()
+        
+        # 重置默认按钮
+        reset_btn = QPushButton("重置默认")
+        reset_btn.clicked.connect(lambda: self.reset_default_settings(dialog, main_font_spin, table_font_spin, theme_combo_settings))
+        button_layout.addWidget(reset_btn)
+        
+        button_layout.addStretch()
+        
+        # 取消按钮
+        cancel_btn = QPushButton("取消")
+        cancel_btn.clicked.connect(dialog.reject)
+        button_layout.addWidget(cancel_btn)
+        
+        # 确定按钮
+        ok_btn = QPushButton("确定")
+        ok_btn.clicked.connect(lambda: self.apply_settings(dialog, main_font_spin, table_font_spin, theme_combo_settings))
+        button_layout.addWidget(ok_btn)
+        
+        layout.addLayout(button_layout)
+        
+        dialog.exec_()
+    
+    def choose_color(self, color_key, button):
+        """选择颜色"""
+        current_color = QColor(self.custom_colors[color_key])
+        color = QColorDialog.getColor(current_color, self, f"选择{color_key}颜色")
+        if color.isValid():
+            self.custom_colors[color_key] = color.name()
+            button.setStyleSheet(f"background-color: {color.name()}; border: 1px solid #ccc; min-height: 30px;")
+            
+            # 自动切换到自定义主题
+            self.current_theme = "custom"
+            
+            # 更新工具栏主题选择器
+            if hasattr(self, 'theme_combo'):
+                theme_index = self.theme_combo.findData("custom")
+                if theme_index >= 0:
+                    self.theme_combo.setCurrentIndex(theme_index)
+            
+            # 立即应用自定义样式
+            self.change_theme("custom")
+    
+    def reset_default_settings(self, dialog, main_font_spin, table_font_spin, theme_combo):
+        """重置为默认设置"""
+        # 重置字号
+        main_font_spin.setValue(18)
+        table_font_spin.setValue(18)
+        
+        # 重置主题
+        theme_combo.setCurrentIndex(0)
+        
+        # 重置颜色
+        self.custom_colors = {
+            'background_start': '#faf6f0',
+            'background_end': '#f0ead6',
+            'table_background': '#f5f5dc',
+            'table_alternate': '#faf0e6',
+            'text_color': '#8B4513',
+            'border_color': '#daa520',
+            'button_background': '#deb887',
+            'button_hover': '#cd853f'
+        }
+        
+        # 重新打开对话框以刷新颜色显示
+        dialog.accept()
+    
+    def get_custom_theme_style(self, font_size):
+        """生成基于自定义颜色的主题样式"""
+        colors = self.custom_colors
+        
+        style = f"""
+        QMainWindow {{
+            background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 {colors['background_start']}, stop: 1 {colors['background_end']});
+            color: {colors['text_color']};
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            font-size: {font_size}px;
+        }}
+        
+        QWidget {{
+            background-color: transparent;
+            color: {colors['text_color']};
+            font-size: {font_size}px;
+        }}
+        
+        QToolBar {{
+            background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 {colors['background_start']}, stop: 1 {colors['background_end']});
+            border: 1px solid {colors['border_color']};
+            border-radius: 5px;
+            padding: 5px;
+            spacing: 10px;
+            font-size: {font_size}px;
+        }}
+        
+        QComboBox {{
+            background-color: {colors['button_background']};
+            border: 2px solid {colors['border_color']};
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: {font_size}px;
+            color: {colors['text_color']};
+            min-height: 25px;
+        }}
+        
+        QComboBox:hover {{
+            background-color: {colors['button_hover']};
+            border-color: {colors['text_color']};
+        }}
+        
+        QComboBox::drop-down {{
+            border: none;
+            width: 20px;
+        }}
+        
+        QComboBox::down-arrow {{
+            image: none;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid {colors['text_color']};
+            margin-right: 5px;
+        }}
+        
+        QPushButton {{
+            background-color: {colors['button_background']};
+            border: 2px solid {colors['border_color']};
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: {font_size}px;
+            color: {colors['text_color']};
+            font-weight: bold;
+            min-height: 25px;
+        }}
+        
+        QPushButton:hover {{
+            background-color: {colors['button_hover']};
+            border-color: {colors['text_color']};
+        }}
+        
+        QPushButton:pressed {{
+            background-color: {colors['border_color']};
+        }}
+        
+        QLabel {{
+            color: {colors['text_color']};
+            font-size: {font_size}px;
+        }}
+        
+        QTextEdit {{
+            background-color: {colors['table_background']};
+            border: 2px solid {colors['border_color']};
+            border-radius: 8px;
+            padding: 10px;
+            font-size: {font_size}px;
+            color: {colors['text_color']};
+        }}
+        
+        QTableWidget {{
+            background-color: {colors['table_background']};
+            alternate-background-color: {colors['table_alternate']};
+            border: 2px solid {colors['border_color']};
+            border-radius: 8px;
+            gridline-color: {colors['border_color']};
+            color: {colors['text_color']};
+            font-size: {font_size}px;
+        }}
+        
+        QHeaderView::section {{
+            background-color: {colors['button_background']};
+            border: 1px solid {colors['border_color']};
+            padding: 8px;
+            font-size: {font_size}px;
+            color: {colors['text_color']};
+            font-weight: bold;
+        }}
+        """
+        
+        return style
+    
+    def apply_settings(self, dialog, main_font_spin, table_font_spin, theme_combo):
+        """应用设置"""
+        # 分别应用不同界面的字号设置
+        main_font_size = main_font_spin.value()
+        table_font_size = table_font_spin.value()
+        
+        # 确保字号在18-30范围内
+        if main_font_size < 18:
+            main_font_size = 18
+        elif main_font_size > 30:
+            main_font_size = 30
+            
+        if table_font_size < 18:
+            table_font_size = 18
+        elif table_font_size > 30:
+            table_font_size = 30
+        
+        self.main_font_size = main_font_size
+        self.table_font_size = table_font_size
+        # 名称专题列和按钮使用表格字号
+        self.name_topic_font_size = self.table_font_size
+        self.button_font_size = self.table_font_size
+        
+        # 为了兼容性，保留current_font_size作为主界面字号
+        self.current_font_size = self.main_font_size
+        
+        # 应用主题设置
+        theme_data = theme_combo.currentData()
+        self.current_theme = theme_data
+        
+        # 保存设置
+        self.save_settings()
+        
+        # 应用更改
+        self.change_font_size(self.main_font_size)
+        self.change_theme(theme_data)
+        
+        # 如果有表格，更新表格样式
+        if hasattr(self, 'table'):
+            self.update_table_style()
+            self.populate_table()
+        
+        # 更新工具栏大小
+        self.update_toolbar_sizes()
+        
+        dialog.accept()
     
     def closeEvent(self, event):
         """窗口关闭时保存设置"""
@@ -1334,11 +2135,12 @@ class YMTreeGenerator(QMainWindow):
 
             root_nodes = self._parse_to_tree(lines)
 
+            # 按照C#版本的逻辑，遍历所有根节点并打印
             final_output = []
             for root in root_nodes:
-                grid, max_x, max_y = self._draw_tree_to_grid(root)
-                tree_str = "\n".join([''.join(row[:max_x]).rstrip() for row in grid[:max_y]])
-                final_output.append(tree_str)
+                tree_output = root.print_tree()
+                if tree_output:
+                    final_output.append(tree_output)
 
             # 直接显示结果
             self.preview_text.setPlainText("\n\n".join(final_output))
@@ -1368,183 +2170,230 @@ class YMTreeGenerator(QMainWindow):
         return width
 
     def _parse_to_tree(self, lines):
-        class Node:
-            def __init__(self, text, depth, get_width_func):
-                self.text = text
-                self.depth = depth
+        """完全按照C#版本的解析算法"""
+        class TextTreeNode:
+            def __init__(self, text, parent=None):
+                self.text = self._convert_to_fullwidth(text)
+                self.parent = parent
                 self.children = []
-                self.parent = None
-                self.x = 0
-                self.y = 0
-                self.width = get_width_func(text)
-                self.subtree_height = 0
-                self.abs_y = 0
-
+                self.start_row = 0
+                self.start_column = 0
+                self.depth = 0 if parent is None else parent.depth + 1
+                
+                if parent is not None:
+                    parent.add_child(self)
+            
+            def _convert_to_fullwidth(self, text):
+                """将半角字符转换为全角字符，确保对齐"""
+                conversion_map = {
+                    '0': '０', '1': '１', '2': '２', '3': '３', '4': '４', '5': '５', '6': '６', '7': '７', '8': '８', '9': '９',
+                    'A': 'Ａ', 'B': 'Ｂ', 'C': 'Ｃ', 'D': 'Ｄ', 'E': 'Ｅ', 'F': 'Ｆ', 'G': 'Ｇ', 'H': 'Ｈ', 'I': 'Ｉ', 'J': 'Ｊ',
+                    'K': 'Ｋ', 'L': 'Ｌ', 'M': 'Ｍ', 'N': 'Ｎ', 'O': 'Ｏ', 'P': 'Ｐ', 'Q': 'Ｑ', 'R': 'Ｒ', 'S': 'Ｓ', 'T': 'Ｔ',
+                    'U': 'Ｕ', 'V': 'Ｖ', 'W': 'Ｗ', 'X': 'Ｘ', 'Y': 'Ｙ', 'Z': 'Ｚ',
+                    'a': 'ａ', 'b': 'ｂ', 'c': 'ｃ', 'd': 'ｄ', 'e': 'ｅ', 'f': 'ｆ', 'g': 'ｇ', 'h': 'ｈ', 'i': 'ｉ', 'j': 'ｊ',
+                    'k': 'ｋ', 'l': 'ｌ', 'm': 'ｍ', 'n': 'ｎ', 'o': 'ｏ', 'p': 'ｐ', 'q': 'ｑ', 'r': 'ｒ', 's': 'ｓ', 't': 'ｔ',
+                    'u': 'ｕ', 'v': 'ｖ', 'w': 'ｗ', 'x': 'ｘ', 'y': 'ｙ', 'z': 'ｚ',
+                    '`': '｀', '~': '～', '!': '！', '@': '＠', '#': '＃', '$': '＄', '%': '％', '^': '＾', '&': '＆', '*': '＊',
+                    '(': '（', ')': '）', '-': '－', '_': '＿', '+': '＋', '=': '＝', '[': '［', '{': '｛', ']': '］', '}': '｝',
+                    '|': '｜', '\\': '＼', ';': '；', ':': '：', "'": '＇', '"': '＂', ',': '，', '<': '＜', '.': '．',
+                    '>': '＞', '/': '／', '?': '？'
+                }
+                
+                result = []
+                for char in text:
+                    result.append(conversion_map.get(char, char))
+                return ''.join(result)
+            
+            def add_child(self, child):
+                self.children.append(child)
+            
+            @property
+            def width(self):
+                if not self.children:
+                    return 1
+                child_sum = sum(child.width for child in self.children)
+                return 3 if child_sum == 2 else child_sum
+            
+            @property
+            def is_one_line(self):
+                return len(self.children) == 0 or (len(self.children) == 1 and self.children[0].is_one_line)
+            
+            @property
+            def min_child_start_row(self):
+                if not self.children:
+                    return self.start_row
+                return self.children[0].min_child_start_row
+            
+            @property
+            def max_child_start_row(self):
+                if not self.children:
+                    return self.start_row
+                return self.children[-1].max_child_start_row
+            
+            def compute_start_row(self, row_ref):
+                """计算起始行位置"""
+                if self.is_one_line:
+                    if self.parent is None:
+                        raise Exception(f"解析到[{self.text}]时失败")
+                    if len(self.parent.children) == 2 and self == self.parent.children[1]:
+                        row_ref[0] += 1
+                        self.start_row = row_ref[0]
+                        row_ref[0] += 1
+                    else:
+                        self.start_row = row_ref[0]
+                        row_ref[0] += 1
+                    
+                    if self.children:
+                        node = self.children[0]
+                        while node is not None:
+                            node.start_row = self.start_row
+                            node = node.children[0] if node.children else None
+                else:
+                    for child in self.children:
+                        child.compute_start_row(row_ref)
+                    self.start_row = (self.children[0].start_row + self.children[-1].start_row) // 2
+            
+            def compute_start_column(self):
+                """计算起始列位置"""
+                if self.parent is None:
+                    self.start_column = 0
+                else:
+                    self.start_column = self.parent.start_column + len(self.parent.text) + 1
+                
+                for child in self.children:
+                    child.compute_start_column()
+            
+            def compute(self):
+                """计算位置"""
+                row_ref = [0]
+                self.compute_start_row(row_ref)
+                self.compute_start_column()
+            
+            def print_tree(self):
+                """按照C#版本的打印算法"""
+                # 创建二维字符串列表
+                max_row = self.max_child_start_row + 1
+                grid = [[] for _ in range(max_row)]
+                
+                # 使用队列遍历所有节点
+                from collections import deque
+                queue = deque([self])
+                
+                while queue:
+                    node = queue.popleft()
+                    
+                    for i in range(node.min_child_start_row, node.max_child_start_row + 1):
+                        if not node.children:
+                            # 叶子节点
+                            grid[i].append(node.text)
+                        elif i < node.children[0].start_row:
+                            # 在第一个子节点之前
+                            grid[i].append('　' * (len(node.text) + 1))
+                        elif i <= node.children[-1].start_row:
+                            # 在子节点范围内
+                            line_str = ""
+                            for j, child in enumerate(node.children):
+                                if i == child.start_row:
+                                    if j == 0 and node.start_row == child.start_row and len(node.children) == 1:
+                                        line_str = node.text + "─"
+                                    elif j == 0:
+                                        line_str = '　' * len(node.text) + "┌"
+                                    elif j == len(node.children) - 1:
+                                        line_str = '　' * len(node.text) + "└"
+                                    elif node.start_row == child.start_row:
+                                        line_str = node.text + "┼"
+                                    else:
+                                        line_str = '　' * len(node.text) + "├"
+                                    break
+                            
+                            if not line_str:
+                                if node.start_row == i:
+                                    line_str = node.text + "┤"
+                                else:
+                                    line_str = '　' * len(node.text) + "│"
+                            
+                            grid[i].append(line_str)
+                        else:
+                            # 在最后一个子节点之后
+                            grid[i].append('　' * (len(node.text) + 1))
+                    
+                    # 将子节点加入队列
+                    for child in node.children:
+                        queue.append(child)
+                
+                # 构建最终字符串
+                result_lines = []
+                for row in grid:
+                    result_lines.append(''.join(row))
+                
+                return '\n'.join(result_lines).rstrip()
+        
+        # 解析逻辑 - 完全按照C#版本
         root_nodes = []
-        parent_stack = []
-
-        for line in lines:
-            # 跳过空行
+        node_stack = []
+        
+        for i, line in enumerate(lines):
             if not line.strip():
                 continue
-
-            # 计算深度
-            stripped_line = line.lstrip('-')
-            depth = len(line) - len(stripped_line)
-            text = stripped_line.strip()
-
-            # 跳过空文本
-            if not text:
-                continue
-
-            # 创建节点
-            node = Node(text, depth, self._get_display_width)
-
-            if not parent_stack:
-                root_nodes.append(node)
-                parent_stack.append(node)
-                continue
-
-            # 调整父节点栈
-            while parent_stack and parent_stack[-1].depth >= depth:
-                parent_stack.pop()
-
-            if parent_stack:
-                parent = parent_stack[-1]
-                parent.children.append(node)
-                node.parent = parent
-            else:
-                root_nodes.append(node)
             
-            parent_stack.append(node)
+            # 计算层级深度
+            j = 0
+            while j < len(line) and line[j] in "#-_$@*%":
+                j += 1
+            
+            if j >= len(line):
+                continue
+            
+            if j == 0:
+                # 根节点
+                root = TextTreeNode(line)
+                root_nodes.append(root)
+                node_stack.clear()
+                node_stack.append(root)
+            else:
+                # 调整栈
+                while node_stack and j <= node_stack[-1].depth:
+                    node_stack.pop()
+                
+                if not node_stack:
+                    raise Exception(f"解析第{i+1}行[{line}]时失败")
+                
+                last_node = node_stack[-1]
+                
+                # 判断是子节点还是同级节点
+                if j == last_node.depth + 1:
+                    # 子节点
+                    new_node = TextTreeNode(line[j:], last_node)
+                    node_stack.append(new_node)
+                elif j == last_node.depth:
+                    # 同级节点
+                    new_node = TextTreeNode(line[j:], last_node.parent)
+                    node_stack.append(new_node)
+                else:
+                    raise Exception(f"解析第{i+1}行[{line}]时失败")
+        
+        # 计算所有根节点的位置
+        for root in root_nodes:
+            root.compute()
         
         return root_nodes
 
+    # 旧的绘制方法已被C#版本的算法替代，保留以防兼容性问题
     def _draw_tree_to_grid(self, root):
-        # 1. 计算每个节点的位置
-        self._layout_tree(root)
-        
-        # 2. 确定网格尺寸
-        max_x, max_y = self._get_grid_size(root)
-        
-        # 创建网格，使用全角空格作为默认字符
-        grid = [['　'] * (max_x + 20) for _ in range(max_y + 10)]
-
-        # 3. 在网格上绘制树
-        self._draw_on_grid(root, grid)
-
-        return grid, max_x + 20, max_y + 10
+        """已废弃：使用C#版本的print_tree方法替代"""
+        pass
 
     def _layout_tree(self, node, x=0, y=0):
-        """计算树状图的布局位置 - 按照正确的义脉树枝图格式"""
-        node.x = x
-        node.y = y
-        
-        if not node.children:
-            return
-        
-        if len(node.children) == 1:
-            # 单个子节点，水平排列在同一行
-            child = node.children[0]
-            child_x = x + self._get_display_width(node.text) + 1
-            self._layout_tree(child, child_x, y)
-        elif len(node.children) == 2:
-            # 两个子节点：第一个在上方，第二个在下方
-            child_x = x + self._get_display_width(node.text) + 1
-            self._layout_tree(node.children[0], child_x, y - 1)
-            self._layout_tree(node.children[1], child_x, y + 1)
-        else:
-            # 多个子节点：第一个在上方，其余依次向下，中间有垂直连接线
-            child_x = x + self._get_display_width(node.text) + 1
-            self._layout_tree(node.children[0], child_x, y - 1)
-            for i in range(1, len(node.children)):
-                self._layout_tree(node.children[i], child_x, y + i)
+        """已废弃：使用C#版本的算法替代"""
+        pass
 
     def _get_grid_size(self, node):
-        """计算网格尺寸"""
-        max_x = 0
-        max_y = 0
-        min_y = 0
-        
-        def traverse(n):
-            nonlocal max_x, max_y, min_y
-            max_x = max(max_x, n.x + self._get_display_width(n.text))
-            max_y = max(max_y, n.y)
-            min_y = min(min_y, n.y)
-            for child in n.children:
-                traverse(child)
-        
-        traverse(node)
-        
-        # 调整所有节点的y坐标，确保最小y为0
-        if min_y < 0:
-            def shift_y(n, offset):
-                n.y += offset
-                for child in n.children:
-                    shift_y(child, offset)
-            shift_y(node, -min_y)
-            max_y += -min_y
-        
-        return max_x, max_y
+        """已废弃：使用C#版本的算法替代"""
+        pass
 
     def _draw_on_grid(self, node, grid):
-        """按照正确的义脉树枝图格式绘制树状图"""
-        # 绘制节点文本
-        if 0 <= node.y < len(grid):
-            for i, char in enumerate(node.text):
-                if node.x + i < len(grid[0]):
-                    grid[node.y][node.x + i] = char
-
-        # 绘制到子节点的连接线
-        if node.children:
-            text_width = self._get_display_width(node.text)
-            connect_x = node.x + text_width
-            
-            if len(node.children) == 1:
-                # 单个子节点，水平连接，使用─
-                if 0 <= node.y < len(grid) and connect_x < len(grid[0]):
-                    grid[node.y][connect_x] = '─'
-            elif len(node.children) == 2:
-                # 两个子节点的情况
-                if 0 <= node.y < len(grid) and connect_x < len(grid[0]):
-                    grid[node.y][connect_x] = '┤'
-                
-                # 绘制子节点的分支符号
-                for i, child in enumerate(node.children):
-                    if 0 <= child.y < len(grid) and connect_x < len(grid[0]):
-                        if i == 0:
-                            grid[child.y][connect_x] = '┌'  # 上方子节点
-                        else:
-                            grid[child.y][connect_x] = '└'  # 下方子节点
-            else:
-                # 多个子节点的情况
-                child_ys = [child.y for child in node.children]
-                min_y = min(child_ys)
-                max_y = max(child_ys)
-                
-                # 在父节点位置绘制分支起点
-                if 0 <= node.y < len(grid) and connect_x < len(grid[0]):
-                    grid[node.y][connect_x] = '┤'
-                
-                # 绘制垂直连接线和子节点分支符号
-                for y in range(min_y, max_y + 1):
-                    if 0 <= y < len(grid) and connect_x < len(grid[0]) and y != node.y:
-                        if y in child_ys:
-                            # 子节点位置的分支符号
-                            child_index = child_ys.index(y)
-                            if child_index == 0:
-                                grid[y][connect_x] = '┌'  # 第一个子节点
-                            elif child_index == len(node.children) - 1:
-                                grid[y][connect_x] = '└'  # 最后一个子节点
-                            else:
-                                grid[y][connect_x] = '├'  # 中间子节点
-                        else:
-                            # 中间的垂直连接线
-                            grid[y][connect_x] = '│'
-            
-            # 递归绘制子节点
-            for child in node.children:
-                self._draw_on_grid(child, grid)
+        """已废弃：使用C#版本的算法替代"""
+        pass
 
     def copy_result(self):
         result_text = self.preview_text.toPlainText()
