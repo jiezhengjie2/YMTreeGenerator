@@ -532,6 +532,10 @@ class HistoryDialog(QDialog):
                 padding: 12px 8px;
                 border-bottom: 1px solid #daa520;
                 color: #8B4513;
+                background-color: #f5f5dc;
+            }
+            QTableWidget::item:alternate {
+                background-color: #faf0e6;
             }
             QTableWidget::item:selected {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
@@ -647,15 +651,25 @@ class HistoryDialog(QDialog):
             name_item = QTableWidgetItem(diagram['name'])
             name_item.setTextAlignment(Qt.AlignCenter)
             name_item.setData(Qt.UserRole, i)  # 存储行索引用于预览
-            # 设置古朴纸书感字体颜色，在黑色背景下清晰可见
+            # 设置古朴纸书感字体颜色和背景色
             name_item.setForeground(QColor("#8B4513"))  # 深棕色，古朴感
+            # 确保背景为亮色
+            if i % 2 == 0:
+                name_item.setBackground(QColor("#f5f5dc"))
+            else:
+                name_item.setBackground(QColor("#faf0e6"))
             self.table.setItem(i, 0, name_item)
             
             # 专题
             topic_item = QTableWidgetItem(diagram['topic_name'])
             topic_item.setTextAlignment(Qt.AlignCenter)
-            # 设置古朴纸书感字体颜色，在黑色背景下清晰可见
+            # 设置古朴纸书感字体颜色和背景色
             topic_item.setForeground(QColor("#8B4513"))  # 深棕色，古朴感
+            # 确保背景为亮色
+            if i % 2 == 0:
+                topic_item.setBackground(QColor("#f5f5dc"))
+            else:
+                topic_item.setBackground(QColor("#faf0e6"))
             self.table.setItem(i, 1, topic_item)
             
             # 创建时间 - 格式化为月-日-时-分/年
@@ -672,12 +686,22 @@ class HistoryDialog(QDialog):
             
             created_item = QTableWidgetItem(formatted_time)
             created_item.setTextAlignment(Qt.AlignCenter)
-            # 设置古朴纸书感字体颜色，在黑色背景下清晰可见
+            # 设置古朴纸书感字体颜色和背景色
             created_item.setForeground(QColor("#8B4513"))  # 深棕色，古朴感
+            # 确保背景为亮色
+            if i % 2 == 0:
+                created_item.setBackground(QColor("#f5f5dc"))
+            else:
+                created_item.setBackground(QColor("#faf0e6"))
             self.table.setItem(i, 2, created_item)
             
             # 操作列 - 现代化按钮设计
             btn_widget = QWidget()
+            # 确保操作列背景为亮色
+            if i % 2 == 0:
+                btn_widget.setStyleSheet("background-color: #f5f5dc;")
+            else:
+                btn_widget.setStyleSheet("background-color: #faf0e6;")
             btn_layout = QHBoxLayout(btn_widget)
             btn_layout.setContentsMargins(15, 15, 15, 15)  # 增加边距提升视觉效果
             btn_layout.setSpacing(15)  # 增加按钮间距
