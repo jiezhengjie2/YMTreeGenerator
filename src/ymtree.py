@@ -1413,24 +1413,48 @@ class YMTreeGenerator(QMainWindow):
                 # 比较版本号
                 if self.compare_versions(latest_version, current_version) > 0:
                     # 有新版本
-                    download_url = release_data.get("html_url", f"https://github.com/{github_repo}/releases/latest")
+                    assets = release_data.get("assets", [])
+                    download_asset = None
+                    
+                    # 查找可下载的文件
+                    for asset in assets:
+                        if asset.get("name", "").endswith((".zip", ".exe", ".msi")):
+                            download_asset = asset
+                            break
+                    
                     msg = QMessageBox(self)
                     msg.setWindowTitle("发现新版本")
                     msg.setText(f"发现新版本: {latest_version}\n当前版本: {current_version}")
                     msg.setInformativeText(f"发布说明:\n{release_data.get('body', '无详细说明')}")
-                    msg.setDetailedText(f"下载地址: {download_url}")
                     
-                    # 添加下载按钮
-                    download_btn = msg.addButton("前往下载", QMessageBox.ActionRole)
-                    close_btn = msg.addButton("关闭", QMessageBox.RejectRole)
-                    
-                    msg.exec_()
-                    
-                    if msg.clickedButton() == download_btn:
-                        QDesktopServices.openUrl(QUrl(download_url))
+                    if download_asset:
+                        # 添加自动更新按钮
+                        auto_update_btn = msg.addButton("自动更新", QMessageBox.ActionRole)
+                        manual_download_btn = msg.addButton("手动下载", QMessageBox.ActionRole)
+                        close_btn = msg.addButton("关闭", QMessageBox.RejectRole)
+                        
+                        msg.exec_()
+                        
+                        if msg.clickedButton() == auto_update_btn:
+                            self.auto_update(download_asset, latest_version)
+                        elif msg.clickedButton() == manual_download_btn:
+                            QDesktopServices.openUrl(QUrl(release_data.get("html_url", f"https://github.com/{github_repo}/releases/latest")))
+                    else:
+                        # 没有找到可下载的文件，只提供手动下载
+                        manual_download_btn = msg.addButton("前往下载", QMessageBox.ActionRole)
+                        close_btn = msg.addButton("关闭", QMessageBox.RejectRole)
+                        
+                        msg.exec_()
+                        
+                        if msg.clickedButton() == manual_download_btn:
+                            QDesktopServices.openUrl(QUrl(release_data.get("html_url", f"https://github.com/{github_repo}/releases/latest")))
                 else:
                     # 已是最新版本
                     QMessageBox.information(self, "检查更新", f"当前已是最新版本: {current_version}")
+            elif response.status_code == 404:
+                # 仓库存在但没有releases
+                QMessageBox.information(self, "检查更新", 
+                    "该仓库暂未发布任何版本\n\n这可能是因为：\n1. 仓库作者还未创建release版本\n2. 这是一个新建的仓库")
             else:
                 # API请求失败
                 QMessageBox.warning(self, "检查更新", f"无法获取更新信息，请检查网络连接。\n错误代码: {response.status_code}")
@@ -1441,6 +1465,127 @@ class YMTreeGenerator(QMainWindow):
         except Exception as e:
             # 其他异常
             QMessageBox.warning(self, "检查更新", f"检查更新时发生错误: {str(e)}")
+    
+    def auto_update(self, download_asset, version):
+        """自动更新程序"""
+        try:
+            download_url = download_asset.get("browser_download_url")
+            file_name = download_asset.get("name")
+            file_size = download_asset.get("size", 0)
+            
+            if not download_url:
+                QMessageBox.warning(self, "自动更新", "无法获取下载链接，请尝试手动下载。")
+                return
+            
+            # 创建进度对话框
+            progress_dialog = QProgressDialog("正在下载更新...", "取消", 0, 100, self)
+            progress_dialog.setWindowTitle("自动更新")
+            progress_dialog.setWindowModality(Qt.WindowModal)
+            progress_dialog.show()
+            
+            # 创建临时下载目录
+            temp_dir = os.path.join(os.path.dirname(__file__), "temp_update")
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            download_path = os.path.join(temp_dir, file_name)
+            
+            # 下载文件
+            # 配置SSL和连接设置以避免连接错误
+            import ssl
+            import urllib3
+            from requests.adapters import HTTPAdapter
+            from urllib3.util.retry import Retry
+            
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            # 创建一个session来处理SSL配置和重试机制
+            session = requests.Session()
+            
+            # 配置重试策略
+            retry_strategy = Retry(
+                total=3,
+                backoff_factor=1,
+                status_forcelist=[429, 500, 502, 503, 504],
+            )
+            
+            # 创建适配器
+            adapter = HTTPAdapter(max_retries=retry_strategy)
+            session.mount("http://", adapter)
+            session.mount("https://", adapter)
+            
+            # 设置请求头和SSL配置
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            })
+            session.verify = False  # 临时禁用SSL验证以避免连接问题
+            
+            response = session.get(download_url, stream=True, timeout=60)
+            response.raise_for_status()
+            
+            downloaded_size = 0
+            with open(download_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if progress_dialog.wasCanceled():
+                        f.close()
+                        os.remove(download_path)
+                        return
+                    
+                    if chunk:
+                        f.write(chunk)
+                        downloaded_size += len(chunk)
+                        
+                        if file_size > 0:
+                            progress = int((downloaded_size / file_size) * 100)
+                            progress_dialog.setValue(progress)
+                            progress_dialog.setLabelText(f"正在下载更新... {downloaded_size // 1024}KB / {file_size // 1024}KB")
+                        
+                        QApplication.processEvents()
+            
+            progress_dialog.close()
+            
+            # 下载完成，询问是否立即安装
+            reply = QMessageBox.question(self, "下载完成", 
+                f"更新文件已下载完成！\n\n文件: {file_name}\n版本: {version}\n\n是否立即安装更新？\n\n注意：程序将会关闭并启动安装程序。",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            
+            if reply == QMessageBox.Yes:
+                self.install_update(download_path, file_name)
+            else:
+                QMessageBox.information(self, "更新文件已保存", 
+                    f"更新文件已保存到：\n{download_path}\n\n您可以稍后手动安装。")
+                
+        except requests.exceptions.RequestException as e:
+            QMessageBox.warning(self, "下载失败", f"下载更新文件时发生网络错误：\n{str(e)}")
+        except Exception as e:
+            QMessageBox.warning(self, "更新失败", f"自动更新过程中发生错误：\n{str(e)}")
+    
+    def install_update(self, file_path, file_name):
+        """安装更新"""
+        try:
+            import subprocess
+            import sys
+            
+            if file_name.endswith('.exe'):
+                # 如果是exe文件，直接运行安装程序
+                subprocess.Popen([file_path], shell=True)
+                QApplication.quit()
+            elif file_name.endswith('.zip'):
+                # 如果是zip文件，提示用户手动解压
+                reply = QMessageBox.question(self, "安装更新", 
+                    f"下载的是压缩包文件，需要手动解压安装。\n\n是否打开文件所在位置？",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+                
+                if reply == QMessageBox.Yes:
+                    # 打开文件所在目录
+                    import subprocess
+                    subprocess.Popen(['explorer', '/select,', file_path.replace('/', '\\')])
+            else:
+                # 其他文件类型，打开文件所在位置
+                import subprocess
+                subprocess.Popen(['explorer', '/select,', file_path.replace('/', '\\')])
+                
+        except Exception as e:
+            QMessageBox.warning(self, "安装失败", f"启动安装程序时发生错误：\n{str(e)}")
     
     def compare_versions(self, version1, version2):
         """比较两个版本号
