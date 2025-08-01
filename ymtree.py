@@ -525,7 +525,7 @@ class HistoryDialog(QDialog):
                 border: 2px solid #daa520;
                 border-radius: 8px;
                 gridline-color: #daa520;
-                font-size: 14px;
+                font-size: 16px;
                 selection-background-color: #deb887;
             }
             QTableWidget::item {
@@ -554,7 +554,7 @@ class HistoryDialog(QDialog):
                 border: 1px solid #b8860b;
                 border-radius: 4px;
                 font-weight: 600;
-                font-size: 14px;
+                font-size: 16px;
             }
             QHeaderView::section:hover {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
@@ -712,8 +712,7 @@ class HistoryDialog(QDialog):
             view_btn.setFixedSize(80, 45)  # 增大按钮尺寸提升可点击性
             view_btn.setStyleSheet("""
                 QPushButton {
-                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                                               stop:0 #deb887, stop:1 #cd853f);
+                    background-color: transparent;
                     color: #3c2e26;
                     border: 2px solid #b8860b;
                     border-radius: 8px;
@@ -722,13 +721,11 @@ class HistoryDialog(QDialog):
                     padding: 4px 8px;
                 }
                 QPushButton:hover {
-                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                                               stop:0 #f0e68c, stop:1 #daa520);
+                    background-color: #deb887;
                     border-color: #daa520;
                 }
                 QPushButton:pressed {
-                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                                               stop:0 #cd853f, stop:1 #a0522d);
+                    background-color: #cd853f;
                     border-color: #a0522d;
                 }
             """)
@@ -740,8 +737,7 @@ class HistoryDialog(QDialog):
             delete_btn.setFixedSize(80, 45)  # 与查看按钮保持一致的尺寸
             delete_btn.setStyleSheet("""
                 QPushButton {
-                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                                               stop:0 #d2b48c, stop:1 #bc9a6a);
+                    background-color: transparent;
                     color: #2f1b14;
                     border: 2px solid #a0522d;
                     border-radius: 8px;
@@ -750,13 +746,11 @@ class HistoryDialog(QDialog):
                     padding: 4px 8px;
                 }
                 QPushButton:hover {
-                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                                               stop:0 #deb887, stop:1 #cd853f);
+                    background-color: #d2b48c;
                     border-color: #8b4513;
                 }
                 QPushButton:pressed {
-                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
-                                               stop:0 #bc9a6a, stop:1 #a0522d);
+                    background-color: #bc9a6a;
                     border-color: #654321;
                 }
             """)
