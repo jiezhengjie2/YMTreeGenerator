@@ -1044,7 +1044,7 @@ class YMTreeGenerator(QMainWindow):
         
         # 添加检查更新按钮到工具栏
         update_btn = QPushButton("检查更新")
-        update_btn.setFixedWidth(100)
+        update_btn.setFixedWidth(120)
         update_btn.clicked.connect(self.check_for_updates)
         toolbar.addWidget(update_btn)
         
@@ -1576,7 +1576,7 @@ class YMTreeGenerator(QMainWindow):
                         QMessageBox.information(self, "检查更新", "当前已是最新版本！")
                 elif response.status_code == 404:
                     progress.close()
-                    QMessageBox.warning(self, "错误", "GitHub仓库不存在或无法访问\n请检查version.json中的github_repo配置")
+                    QMessageBox.information(self, "提示", "该仓库暂未发布任何版本\n\n这可能是因为：\n1. 仓库作者还未创建release版本\n2. 这是一个新建的仓库\n\n当前版本：" + local_version['version'])
                 else:
                     progress.close()
                     QMessageBox.warning(self, "错误", f"GitHub服务器返回错误：{response.status_code}")

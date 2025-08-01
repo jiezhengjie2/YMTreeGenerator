@@ -2,6 +2,6 @@
     "version": "1.0.0",
     "build_date": "2024-01-01",
     "description": "义脉树枝图生成器 v1.0.0",
-    "github_repo": "jizhenglig2/YMTreeGenerator",
-    "download_url": "https://github.com/jizhenglig2/YMTreeGenerator/releases/download/v{version}/义脉树枝图生成器_发布包.zip"
+    "github_repo": "jiezhengjie2/YMTreeGenerator",
+    "download_url": "https://github.com/jiezhengjie2/YMTreeGenerator/releases/latest"
 }

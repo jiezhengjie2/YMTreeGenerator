@@ -1,6 +1,12 @@
 import sys
 import json
 import os
+import requests
+import re
+
+# 添加项目根目录到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QTextEdit, QPushButton, QLabel, 
                              QSplitter, QGroupBox, QMessageBox, QComboBox,
@@ -8,8 +14,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QDialogButtonBox, QLineEdit, QTableWidget, 
                              QTableWidgetItem, QHeaderView, QTabWidget,
                              QSpinBox, QTextBrowser, QColorDialog)
-from PyQt5.QtGui import QFont, QColor, QPainter, QBrush
-from PyQt5.QtCore import Qt, pyqtSignal, QSettings
+from PyQt5.QtGui import QFont, QColor, QPainter, QBrush, QDesktopServices
+from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QUrl
 from database import DatabaseManager
 from src.modern_theme import get_modern_dark_theme, get_light_theme
 
@@ -821,8 +827,20 @@ class YMTreeGenerator(QMainWindow):
         self.settings = QSettings("YMTree", "YMTreeGenerator")
         self.setWindowTitle("义脉树枝图生成器")
         self.setGeometry(100, 100, 1200, 800)
+        self.current_version = self.load_version_info()
         self.initUI()
         self.load_settings()
+    
+    def load_version_info(self):
+        """加载版本信息"""
+        try:
+            version_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "version.json")
+            with open(version_file, "r", encoding="utf-8") as f:
+                version_data = json.load(f)
+                return version_data
+        except Exception as e:
+            print(f"加载版本信息失败: {str(e)}")
+            return {"version": "1.0.0", "github_repo": "jiezhengjie2/YMTreeGenerator"}
         
     def initUI(self):
         # 应用现代深色主题
@@ -874,6 +892,33 @@ class YMTreeGenerator(QMainWindow):
         
         self.font_size_combo.currentIndexChanged.connect(self.change_font_size)
         toolbar.addWidget(self.font_size_combo)
+        toolbar.addSeparator()
+        
+        # 添加检查更新按钮
+        check_update_btn = QPushButton("检查更新")
+        check_update_btn.setFixedWidth(120)
+        check_update_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                           stop:0 #4CAF50, stop:1 #388E3C);
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                padding: 6px 12px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                           stop:0 #66BB6A, stop:1 #4CAF50);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                           stop:0 #388E3C, stop:1 #2E7D32);
+            }
+        """)
+        check_update_btn.clicked.connect(self.check_for_updates)
+        toolbar.addWidget(check_update_btn)
         toolbar.addSeparator()
         
         # 添加状态栏
@@ -1342,6 +1387,82 @@ class YMTreeGenerator(QMainWindow):
         """显示我的树枝图"""
         dialog = HistoryDialog(self, self.db_manager)
         dialog.exec_()
+    
+    def check_for_updates(self):
+        """检查更新"""
+        try:
+            # 获取当前版本
+            current_version = self.current_version.get("version", "1.0.0")
+            github_repo = self.current_version.get("github_repo", "jiezhengjie2/YMTreeGenerator")
+            
+            # 显示检查中的状态
+            self.statusBar().showMessage("正在检查更新...", 3000)
+            
+            # 从GitHub API获取最新版本信息
+            api_url = f"https://api.github.com/repos/{github_repo}/releases/latest"
+            response = requests.get(api_url, timeout=10)
+            
+            if response.status_code == 200:
+                release_data = response.json()
+                latest_version = release_data.get("tag_name", "")
+                
+                # 移除版本号前的'v'字符
+                if latest_version.startswith("v"):
+                    latest_version = latest_version[1:]
+                
+                # 比较版本号
+                if self.compare_versions(latest_version, current_version) > 0:
+                    # 有新版本
+                    download_url = release_data.get("html_url", f"https://github.com/{github_repo}/releases/latest")
+                    msg = QMessageBox(self)
+                    msg.setWindowTitle("发现新版本")
+                    msg.setText(f"发现新版本: {latest_version}\n当前版本: {current_version}")
+                    msg.setInformativeText(f"发布说明:\n{release_data.get('body', '无详细说明')}")
+                    msg.setDetailedText(f"下载地址: {download_url}")
+                    
+                    # 添加下载按钮
+                    download_btn = msg.addButton("前往下载", QMessageBox.ActionRole)
+                    close_btn = msg.addButton("关闭", QMessageBox.RejectRole)
+                    
+                    msg.exec_()
+                    
+                    if msg.clickedButton() == download_btn:
+                        QDesktopServices.openUrl(QUrl(download_url))
+                else:
+                    # 已是最新版本
+                    QMessageBox.information(self, "检查更新", f"当前已是最新版本: {current_version}")
+            else:
+                # API请求失败
+                QMessageBox.warning(self, "检查更新", f"无法获取更新信息，请检查网络连接。\n错误代码: {response.status_code}")
+                
+        except requests.exceptions.RequestException as e:
+            # 网络请求异常
+            QMessageBox.warning(self, "检查更新", f"网络连接错误: {str(e)}\n请检查您的网络连接。")
+        except Exception as e:
+            # 其他异常
+            QMessageBox.warning(self, "检查更新", f"检查更新时发生错误: {str(e)}")
+    
+    def compare_versions(self, version1, version2):
+        """比较两个版本号
+        返回值: 1表示version1大于version2, -1表示version1小于version2, 0表示相等
+        """
+        v1_parts = [int(x) for x in re.split(r'\D+', version1) if x.isdigit()]
+        v2_parts = [int(x) for x in re.split(r'\D+', version2) if x.isdigit()]
+        
+        # 确保两个版本号列表长度相同
+        while len(v1_parts) < len(v2_parts):
+            v1_parts.append(0)
+        while len(v2_parts) < len(v1_parts):
+            v2_parts.append(0)
+        
+        # 逐位比较
+        for i in range(len(v1_parts)):
+            if v1_parts[i] > v2_parts[i]:
+                return 1
+            elif v1_parts[i] < v2_parts[i]:
+                return -1
+        
+        return 0
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
