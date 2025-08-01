@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QTableWidgetItem, QHeaderView, QTabWidget,
                              QSpinBox, QTextBrowser, QColorDialog, QButtonGroup,
                              QScrollArea, QProgressDialog)
-from PyQt5.QtGui import QFont, QColor, QPainter, QBrush
+from PyQt5.QtGui import QFont, QColor, QPainter, QBrush, QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal, QSettings, QThread
 from database import DatabaseManager
 from theme_manager import get_theme_style, get_theme_list
@@ -1408,6 +1408,18 @@ class YMTreeGenerator(QMainWindow):
         self.update_btn.clicked.connect(self.check_for_updates)
         toolbar.addWidget(self.update_btn)
         
+        # 添加使用说明按钮到工具栏
+        self.help_btn = QPushButton("说明")
+        self.help_btn.setMinimumWidth(100)
+        self.help_btn.clicked.connect(self.show_help_dialog)
+        toolbar.addWidget(self.help_btn)
+        
+        # 添加关于按钮到工具栏
+        self.about_btn = QPushButton("关于")
+        self.about_btn.setMinimumWidth(80)
+        self.about_btn.clicked.connect(self.show_about_dialog)
+        toolbar.addWidget(self.about_btn)
+        
         # 添加状态栏
         status_bar = QStatusBar()
         self.setStatusBar(status_bar)
@@ -1561,11 +1573,24 @@ class YMTreeGenerator(QMainWindow):
         # 添加惟海法师开示到底部中间
         wisdom_label = QLabel("知识树是活的，要在人生中生长")
         wisdom_label.setObjectName("wisdomLabel")
-        wisdom_font = QFont("华文行楷", 24)
+        wisdom_font = QFont("华文行楷", 32)
         wisdom_font.setBold(True)
         wisdom_label.setFont(wisdom_font)
         wisdom_label.setAlignment(Qt.AlignCenter)
-        wisdom_label.setStyleSheet("margin: 10px 0; padding: 10px;")
+        # 添加艺术字体效果，模仿图片中的样式
+        wisdom_label.setStyleSheet("""
+            margin: 20px 0; 
+            padding: 20px 40px;
+            color: #8B4513;
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                      stop:0 #F5DEB3, 
+                                      stop:1 #DEB887);
+            border: 3px solid #8B4513;
+            border-radius: 20px;
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(139, 69, 19, 0.4);
+            letter-spacing: 2px;
+        """)
         main_layout.addWidget(wisdom_label)
         
         # 应用默认样式
@@ -2850,6 +2875,443 @@ class YMTreeGenerator(QMainWindow):
         import webbrowser
         webbrowser.open(download_url)
         QMessageBox.information(self, "提示", "已在浏览器中打开下载页面，请下载最新版本并手动安装。")
+    
+    def show_help_dialog(self):
+        """显示使用说明对话框"""
+        dialog = HelpDialog(self)
+        dialog.exec_()
+    
+    def show_about_dialog(self):
+        """显示关于对话框"""
+        dialog = AboutDialog(self)
+        dialog.exec_()
+
+class HelpDialog(QDialog):
+    """使用说明对话框"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("使用说明")
+        self.setModal(True)
+        self.resize(800, 700)
+        self.init_ui()
+    
+    def init_ui(self):
+        # 创建滚动区域
+        scroll_area = QScrollArea(self)
+        scroll_widget = QWidget()
+        layout = QVBoxLayout(scroll_widget)
+        layout.setSpacing(20)
+        layout.setContentsMargins(30, 30, 30, 30)
+        
+        # 标题
+        title_label = QLabel("义脉树枝图生成器使用说明")
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet("""
+            QLabel {
+                font-size: 24px;
+                font-weight: bold;
+                color: #8B4513;
+                margin-bottom: 20px;
+                padding: 15px;
+            }
+        """)
+        layout.addWidget(title_label)
+        
+        # 使用说明内容
+        help_content = """
+<h3 style="color: #8B4513; margin-top: 20px;">📝 输入格式说明</h3>
+<p style="line-height: 1.6; margin: 10px 0;">• <b>第一行</b>：主题名称，行首无短线</p>
+<p style="line-height: 1.6; margin: 10px 0;">• <b>目录层级</b>：每增加一级目录，行首短线多一条</p>
+<p style="line-height: 1.6; margin: 10px 0;">• <b>短线格式</b>：必须使用半角短线（-）</p>
+<p style="line-height: 1.6; margin: 10px 0;">• <b>空行处理</b>：允许有空行，程序会自动忽略</p>
+
+<h3 style="color: #8B4513; margin-top: 25px;">🌳 输入示例</h3>
+<div style="background: #faf0e6; padding: 15px; border-radius: 8px; border: 2px solid #daa520; font-family: monospace; font-size: 13px; margin: 15px 0;">
+佛法修学体系<br>
+-戒学<br>
+--五戒<br>
+--八戒<br>
+--具足戒<br>
+-定学<br>
+--止观<br>
+--禅定<br>
+-慧学<br>
+--闻思修<br>
+--般若智慧
+</div>
+
+<h3 style="color: #8B4513; margin-top: 25px;">⚡ 操作步骤</h3>
+<p style="line-height: 1.6; margin: 10px 0;">1. 在左侧输入区域按格式输入内容</p>
+<p style="line-height: 1.6; margin: 10px 0;">2. 点击"生成义脉树枝图"按钮</p>
+<p style="line-height: 1.6; margin: 10px 0;">3. 在右侧预览区查看生成结果</p>
+<p style="line-height: 1.6; margin: 10px 0;">4. 可直接在预览区编辑调整</p>
+<p style="line-height: 1.6; margin: 10px 0;">5. 使用"复制结果"或"保存结果"保存成果</p>
+
+<h3 style="color: #8B4513; margin-top: 25px;">💡 格式化技巧</h3>
+<p style="line-height: 1.6; margin: 10px 0;">• 若无法对齐，请调整字母、数字或标点为全角</p>
+<p style="line-height: 1.6; margin: 10px 0;">• 若无法对齐，请调整字体为宋体</p>
+<p style="line-height: 1.6; margin: 10px 0;">• 建议使用等宽字体进行编辑</p>
+
+<h3 style="color: #8B4513; margin-top: 25px;">🎨 个性化设置</h3>
+<p style="line-height: 1.6; margin: 10px 0;">• 可在工具栏选择不同主题风格</p>
+<p style="line-height: 1.6; margin: 10px 0;">• 可调整字号大小以适应不同需求</p>
+<p style="line-height: 1.6; margin: 10px 0;">• 支持保存多个专题分类管理</p>
+        """
+        
+        help_text = QLabel(help_content)
+        help_text.setWordWrap(True)
+        help_text.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                color: #3c2e26;
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                border: 2px solid #daa520;
+            }
+        """)
+        layout.addWidget(help_text)
+        
+        # 关闭按钮
+        close_btn = QPushButton("关闭")
+        close_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                           stop:0 #d2b48c, stop:1 #bc9a6a);
+                color: #2f1b14;
+                border: 2px solid #a0522d;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                padding: 12px 30px;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                           stop:0 #deb887, stop:1 #cd853f);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                           stop:0 #bc9a6a, stop:1 #a0522d);
+            }
+        """)
+        close_btn.clicked.connect(self.accept)
+        
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        button_layout.addWidget(close_btn)
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+        
+        # 设置滚动区域
+        scroll_area.setWidget(scroll_widget)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                          stop:0 #faf6f0, stop:1 #f0ead6);
+            }
+        """)
+        
+        # 主布局
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addWidget(scroll_area)
+
+class AboutDialog(QDialog):
+    """关于对话框"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("关于 YMTree")
+        self.setModal(True)
+        self.resize(800, 900)
+        self.init_ui()
+    
+    def init_ui(self):
+        # 创建滚动区域
+        scroll_area = QScrollArea(self)
+        scroll_widget = QWidget()
+        layout = QVBoxLayout(scroll_widget)
+        layout.setSpacing(25)
+        layout.setContentsMargins(40, 40, 40, 40)
+        
+        # 标题
+        title_label = QLabel("义脉树枝图生成器")
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet("""
+            QLabel {
+                font-size: 28px;
+                font-weight: bold;
+                color: #8B4513;
+                margin-bottom: 25px;
+                padding: 15px;
+            }
+        """)
+        layout.addWidget(title_label)
+        
+        # 二维码区域 - 使用水平布局，放在最上面
+        qr_container = QHBoxLayout()
+        qr_container.setSpacing(30)
+        
+        # 第一个二维码 - 作者联系方式
+        contact_widget = QWidget()
+        contact_layout = QVBoxLayout(contact_widget)
+        contact_layout.setSpacing(15)
+        
+        contact_label = QLabel("欢迎添加小愿\n反馈问题")
+        contact_label.setAlignment(Qt.AlignCenter)
+        contact_label.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                color: #5D4E37;
+                font-weight: bold;
+                line-height: 1.4;
+            }
+        """)
+        contact_layout.addWidget(contact_label)
+        
+        # 作者二维码图片
+        contact_qr_label = QLabel()
+        contact_qr_label.setAlignment(Qt.AlignCenter)
+        contact_qr_label.setFixedSize(180, 180)
+        contact_qr_label.setStyleSheet("""
+            QLabel {
+                border: 3px solid #daa520;
+                border-radius: 10px;
+                background: white;
+                padding: 5px;
+            }
+        """)
+        # 尝试加载图片
+        contact_pixmap = QPixmap("qr_author.png")
+        if not contact_pixmap.isNull():
+            contact_qr_label.setPixmap(contact_pixmap.scaled(170, 170, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        else:
+            contact_qr_label.setText("作者二维码")
+            contact_qr_label.setStyleSheet(contact_qr_label.styleSheet() + "color: #8B4513; font-size: 12px;")
+        contact_layout.addWidget(contact_qr_label)
+        
+        qr_container.addWidget(contact_widget)
+        
+        # 第二个二维码 - 付款码
+        payment_widget = QWidget()
+        payment_layout = QVBoxLayout(payment_widget)
+        payment_layout.setSpacing(15)
+        
+        payment_label = QLabel("请小愿喝可乐\n没错，山上可乐五块钱")
+        payment_label.setAlignment(Qt.AlignCenter)
+        payment_label.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                color: #5D4E37;
+                font-weight: bold;
+                line-height: 1.4;
+            }
+        """)
+        payment_layout.addWidget(payment_label)
+        
+        payment_qr_label = QLabel()
+        payment_qr_label.setAlignment(Qt.AlignCenter)
+        payment_qr_label.setFixedSize(180, 180)
+        payment_qr_label.setStyleSheet("""
+            QLabel {
+                border: 3px solid #daa520;
+                border-radius: 10px;
+                background: white;
+                padding: 5px;
+            }
+        """)
+        # 尝试加载图片
+        payment_pixmap = QPixmap("qr_payment.png")
+        if not payment_pixmap.isNull():
+            payment_qr_label.setPixmap(payment_pixmap.scaled(170, 170, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        else:
+            payment_qr_label.setText("付款二维码")
+            payment_qr_label.setStyleSheet(payment_qr_label.styleSheet() + "color: #8B4513; font-size: 12px;")
+        payment_layout.addWidget(payment_qr_label)
+        
+        qr_container.addWidget(payment_widget)
+        
+        # 第三个二维码 - 道场收款码
+        donation_widget = QWidget()
+        donation_layout = QVBoxLayout(donation_widget)
+        donation_layout.setSpacing(15)
+        
+        donation_label = QLabel("欢迎随喜建设")
+        donation_label.setAlignment(Qt.AlignCenter)
+        donation_label.setStyleSheet("""
+            QLabel {
+                font-size: 14px;
+                color: #5D4E37;
+                font-weight: bold;
+                line-height: 1.4;
+            }
+        """)
+        donation_layout.addWidget(donation_label)
+        
+        donation_qr_label = QLabel()
+        donation_qr_label.setAlignment(Qt.AlignCenter)
+        donation_qr_label.setFixedSize(180, 180)
+        donation_qr_label.setStyleSheet("""
+            QLabel {
+                border: 3px solid #daa520;
+                border-radius: 10px;
+                background: white;
+                padding: 5px;
+            }
+        """)
+        # 尝试加载图片
+        donation_pixmap = QPixmap("qr_donation.png")
+        if not donation_pixmap.isNull():
+            donation_qr_label.setPixmap(donation_pixmap.scaled(170, 170, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        else:
+            donation_qr_label.setText("道场收款码")
+            donation_qr_label.setStyleSheet(donation_qr_label.styleSheet() + "color: #8B4513; font-size: 12px;")
+        donation_layout.addWidget(donation_qr_label)
+        
+        qr_container.addWidget(donation_widget)
+        
+        layout.addLayout(qr_container)
+        
+        # 感谢信息
+        thanks_label = QLabel("感谢修道班lu师兄和念住-道千龙行师兄的帮助")
+        thanks_label.setAlignment(Qt.AlignCenter)
+        thanks_label.setWordWrap(True)
+        thanks_label.setStyleSheet("""
+            QLabel {
+                font-size: 16px;
+                color: #5D4E37;
+                margin: 30px 0;
+                padding: 20px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                          stop:0 #faf0e6, stop:1 #f5deb3);
+                border: 2px solid #daa520;
+                border-radius: 10px;
+            }
+        """)
+        layout.addWidget(thanks_label)
+        
+        # 义脉树枝图特色说明
+        feature_title = QLabel("🌟 义脉树枝图的特色与优势")
+        feature_title.setAlignment(Qt.AlignCenter)
+        feature_title.setStyleSheet("""
+            QLabel {
+                font-size: 22px;
+                font-weight: bold;
+                color: #8B4513;
+                margin: 25px 0 20px 0;
+            }
+        """)
+        layout.addWidget(feature_title)
+        
+        feature_content = QLabel("""
+        <div style="text-align: left; background: #faf6f0; padding: 25px; border-radius: 12px; border: 3px solid #daa520;">
+            <h3 style="color: #8B4513; margin: 20px 0 15px 0; font-size: 18px;">📚 一、本质差异：文化根源与哲学深度</h3>
+            <h4 style="color: #A0522D; margin: 15px 0 8px 0; font-size: 16px;">1. 历史传承性</h4>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 义脉树枝图源于<b>中国古代佛教的义理分析方法</b>（如明朝的"义脉图"），是汉地佛教解经的传统工具（如《楞严经正脉疏》中的义脉结构），承载了千年文化智慧</p>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 思维导图是<b>现代西方产物</b>（如托尼·博赞的理论），缺乏文化根基，偏向技术性工具</p>
+            
+            <h4 style="color: #A0522D; margin: 15px 0 8px 0; font-size: 16px;">2. 哲学与认知深度</h4>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 义脉树枝图强调<b>"世界建构"与"生命建构"</b>：通过结构化知识形成智慧体系，进而塑造认知世界的能力（"知识树→世界树→生命树"的动态转化）</p>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 思维导图侧重<b>信息整理</b>，未触及知识对生命境界的提升作用</p>
+            
+            <h3 style="color: #8B4513; margin: 25px 0 15px 0; font-size: 18px;">🔧 二、技术特色：开放性与通用性</h3>
+            <h4 style="color: #A0522D; margin: 15px 0 8px 0; font-size: 16px;">1. 符号系统的普适性</h4>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 义脉树枝图使用<b>基础制表符</b>（如 ├─ └─ 等 Unicode 字符），可在任何文本软件（TXT、Word、WPS）中无损复制流通</p>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 思维导图依赖<b>专用软件</b>（如 XMind），格式封闭且跨平台易失真，形成交流壁垒</p>
+            
+            <h4 style="color: #A0522D; margin: 15px 0 8px 0; font-size: 16px;">2. 低门槛与高兼容</h4>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 支持<b>手绘与数字双模式</b>：倡导随手用纸笔绘制（如包装纸裁片），不受工具限制；数字实现则通过调整文档行距（设 0 值）确保结构紧凑</p>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 思维导图依赖软件操作，脱离工具即无法高效修改或传播</p>
+            
+            <h3 style="color: #8B4513; margin: 25px 0 15px 0; font-size: 18px;">🧠 三、功能优势：思维训练与人生应用</h3>
+            <h4 style="color: #A0522D; margin: 15px 0 8px 0; font-size: 16px;">1. 结构化思维的深度培养</h4>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 义脉树枝图要求<b>逻辑三重转化</b>：从事实逻辑（事法）→ 理论逻辑（理法）；从知识碎片 → 立体知识树；最终内化为<b>生命智慧</b></p>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 思维导图停留于<b>信息分层罗列</b>，缺乏对认知深层转化的引导</p>
+            
+            <h4 style="color: #A0522D; margin: 15px 0 8px 0; font-size: 16px;">2. 人生方法论的意义延伸</h4>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 不仅是学习工具，更是<b>心性修为与人生规划</b>的方法</p>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 思维导图局限于任务管理或知识梳理，未关联生命实践</p>
+            
+            <h3 style="color: #8B4513; margin: 25px 0 15px 0; font-size: 18px;">💰 四、社会价值：成本节约与可持续性</h3>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 依赖通用符号和现有办公软件，<b>无需购买专用工具</b>，规避商业软件垄断风险</p>
+            <p style="font-size: 15px; color: #3c2e26; margin: 8px 0; line-height: 1.6;">• 思维导图软件存在订阅费用、版本兼容等问题，增加社会成本</p>
+            
+            <div style="background: #f5f5dc; padding: 15px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #8B4513;">
+                <p style="font-size: 16px; color: #5D4E37; margin: 0; font-weight: bold; text-align: center; font-style: italic;">惟海法师：义脉树枝图不仅是工具，更是<span style="color: #8B4513;">抵御认知异化、建构健康人生生态</span>的实践智慧。其核心在于通过<span style="color: #8B4513;">逻辑结构化训练</span>，使人从"知识接收者"转化为"世界建构者"，最终实现生命境界的跃升。</p>
+            </div>
+        </div>
+        """)
+        feature_content.setWordWrap(True)
+        feature_content.setStyleSheet("""
+            QLabel {
+                margin-bottom: 30px;
+            }
+        """)
+        layout.addWidget(feature_content)
+        
+        # 添加一些间距
+        layout.addSpacing(20)
+        
+        # 作者信息（简洁版）
+        author_info = QLabel("开发者：法小愿 | © 2025")
+        author_info.setAlignment(Qt.AlignCenter)
+        author_info.setStyleSheet("""
+            QLabel {
+                font-size: 12px;
+                color: #A0A0A0;
+                margin-bottom: 20px;
+            }
+        """)
+        layout.addWidget(author_info)
+        
+        # 关闭按钮
+        close_btn = QPushButton("关闭")
+        close_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                           stop:0 #d2b48c, stop:1 #bc9a6a);
+                color: #2f1b14;
+                border: 2px solid #a0522d;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                padding: 12px 30px;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                           stop:0 #deb887, stop:1 #cd853f);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                           stop:0 #bc9a6a, stop:1 #a0522d);
+            }
+        """)
+        close_btn.clicked.connect(self.accept)
+        
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        button_layout.addWidget(close_btn)
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+        
+        # 设置滚动区域
+        scroll_area.setWidget(scroll_widget)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                          stop:0 #faf8f3, stop:1 #f0ead6);
+            }
+        """)
+        
+        # 主布局
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addWidget(scroll_area)
 
 class MarkdownHelpDialog(QDialog):
     """Markdown语法帮助对话框"""

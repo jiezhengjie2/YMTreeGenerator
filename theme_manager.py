@@ -241,13 +241,18 @@ def get_vintage_paper_theme(font_size=13):
     }}
     
     QLabel#wisdomLabel {{
-        color: #8b4513;
+        color: #8B4513;
         background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                  stop:0 #f5f0e6, stop:1 #ede0d0);
-        border: 2px solid #d4c4a8;
-        border-radius: 12px;
-        padding: 15px 25px;
-        
+                                  stop:0 #F5DEB3, 
+                                  stop:1 #DEB887);
+        border: 3px solid #8B4513;
+        border-radius: 20px;
+        padding: 20px 40px;
+        font-weight: bold;
+        font-size: {font_size + 12}px;
+        text-shadow: 3px 3px 6px rgba(139, 69, 19, 0.4);
+        letter-spacing: 2px;
+        margin: 20px 0;
     }}
     
     /* 状态栏 */
